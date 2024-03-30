@@ -1,0 +1,122 @@
+header {
+    display: 'none';
+    justify-content: flex-start;
+    align-items: center;
+    align-content: center;
+}
+
+#asidebtn {
+    border: none;
+    border-radius: 4px;
+    background-color: white;
+    color: white;
+    text-align: center;
+}
+
+#headerindex {
+    font-size: x-large;
+    text-align: center;
+    vertical-align: middle;
+    border: none;
+    margin-left: 2%;
+}
+
+.headerbtn {
+    font-size: x-large;
+    margin-left: 2%;
+    width: 6%;
+    padding: 0.5%;
+    text-align: center;
+}
+
+#loginsystem {
+    display: flex;
+    flex-wrap: nowrap;
+    justify-content: center;
+    align-items: center;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -70%);
+    font-size: x-large;
+}
+
+#account, #password, #submit {
+    display: flex;
+    flex-wrap: nowrap;
+    justify-content: left;
+    align-items: center;
+}
+
+#acselect {
+    flex-grow: 1;
+    font-size: large;
+}
+
+#passw {
+    flex-grow: 1;
+    font-size: medium;
+}
+
+#loginbtn {
+    font-size: x-large;
+    text-align: center;
+    width: 45%;
+    padding: 0.5%;
+}
+
+#wronglogin {
+    display: none;
+    font-size: large;
+    color: red;
+    flex-grow: 1;
+}
+
+.arrowbtn {
+    border: none;
+    border-radius: 8px;
+    background-color: orangered;
+    color: white;
+    transition: all 0.5s;
+    cursor: pointer;
+}
+
+.arrowbtn span {
+    cursor: pointer;
+    position: relative;
+    transition: 0.5s;
+}
+  
+.arrowbtn span:after {
+    content: '\00bb';
+    position: absolute;
+    opacity: 0;
+    top: 0;
+    right: 10%;
+    transition: 0.5s;
+}
+
+.arrowbtn:hover span {
+    padding-right: 25px;
+}
+  
+.arrowbtn:hover span:after {
+    opacity: 1;
+    right: 0;
+}
+
+#mainsystem{
+    display: 'none';
+}
+
+.cash, .mdish, .odish, .back{
+    display: none;
+    flex-wrap: nowrap;
+    justify-content: center;
+    align-items: center;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -70%);
+    font-size: x-large;
+}
