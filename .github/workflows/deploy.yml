@@ -33,7 +33,7 @@ jobs:
           
       # Runs a single command using the runners shell
       - name: Deploy
-        uses: EdwardChen1111/github-pages-deploy-action@releases/v4
+        uses: JamesIves/github-pages-deploy-action@v4
         with:
           ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }} # Settings > Secret 建立的 ACCESS_TOKEN，推同個 repo 的話可以不需要
           BRANCH: gh-pages # deploy 到 gh-pages 這個分支
