@@ -1,31 +1,40 @@
-name: Deploy to GH Pages
+# This is a basic workflow to help you get started with Actions
+name: deploy
 
+# Controls when the action will run. 
 on:
+  # Triggers the workflow on push or pull request events but only for the main branch
   push:
     branches:
-      - main
+      - master
+  pull_request:
+    branches:
+      - master
 
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  build-deploy:
+  # This workflow contains a single job called "build"
+  build:
+    # The type of runner that the job will run on
     runs-on: ubuntu-latest
 
+    # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-      - name: Checkout 🛎️
-        uses: actions/checkout@master
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v2
+      
+      - name: Install & Build # 執行指令
+        run: |
+          npm install
+          npm run build 
+          
+      # Runs a single command using the runners shell
+      - name: Deploy
+        uses: EdwardChen1111/github-pages-deploy-action@releases/v4
         with:
-          persist-credentials: false
-
-      - name: Install 🔧
-        run: yarn install
-
-      - name: Build 🏗️
-        run: yarn build
-        env:
-          NODE_ENV: production
-
-      - name: Deploy to GH Pages 🚀
-        if: ${{ github.event_name != 'pull_request' }}
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: dist
+          ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }} # Settings > Secret 建立的 ACCESS_TOKEN，推同個 repo 的話可以不需要
+          BRANCH: gh-pages # deploy 到 gh-pages 這個分支
+          FOLDER: dist # build 後的資料夾
