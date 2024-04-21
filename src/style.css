@@ -105,13 +105,27 @@ header {
     right: 0;
 }
 
-#mainsystem{
-    display: 'none';
+aside{
+    margin: 0px;
+    border: 3px;
+    border-right: 3px;
+    height: 100%;
+    width: 8%;
+    border-style: solid;
+    border-color: gray;
+    position: absolute;
+    left: 0%;
+    flex-direction: column;
 }
 
-.cash, .mdish, .odish, .back{
+#mainsystem{
+    margin: 0%;
+    padding: 0%;
+    height: max-content;
+}
+
+#cash, #mdish, #odish, #back{
     display: none;
-    flex-wrap: nowrap;
     justify-content: center;
     align-items: center;
     position: absolute;
