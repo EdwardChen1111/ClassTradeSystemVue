@@ -28,7 +28,7 @@ jobs:
       
       - name: Install & Build # 執行指令
         run:
-          npm install vue
+          npm install -g @vue/cli
           npm run build
           
       # Runs a single command using the runners shell
