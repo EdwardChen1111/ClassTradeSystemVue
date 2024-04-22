@@ -40,4 +40,4 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           BRANCH: gh-pages # deploy 到 gh-pages 這個分支
-          FOLDER: ../dist # build 後的資料夾
+          FOLDER: dist # build 後的資料夾
