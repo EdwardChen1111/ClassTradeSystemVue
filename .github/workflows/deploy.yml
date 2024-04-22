@@ -28,7 +28,7 @@ jobs:
       - uses: actions/setup-node@v1
       
       - name: Install & Build # 執行指令
-        run:
+        run: |
           npm install
           npm run build
           
