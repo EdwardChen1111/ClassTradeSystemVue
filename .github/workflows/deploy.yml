@@ -25,7 +25,9 @@ jobs:
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@main
-      - uses: actions/setup-node@v1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 'latest'
       
       - name: Install & Build # 執行指令
         run: |
