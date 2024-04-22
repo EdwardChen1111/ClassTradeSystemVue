@@ -1,8 +1,9 @@
 header {
-    display: 'none';
+    display: flex;
+    flex-wrap: nowrap;
+    vertical-align: middle;
     justify-content: flex-start;
     align-items: center;
-    align-content: center;
 }
 
 #asidebtn {
@@ -14,6 +15,7 @@ header {
 }
 
 #headerindex {
+    display: flex;
     font-size: x-large;
     text-align: center;
     vertical-align: middle;
@@ -107,15 +109,27 @@ header {
 
 aside{
     margin: 0px;
-    border: 3px;
-    border-right: 3px;
+    border: 0px;
+    border-top: 2px;
+    border-right: 2px;
     height: 100%;
     width: 8%;
     border-style: solid;
     border-color: gray;
     position: absolute;
-    left: 0%;
+    display: 'flex';
     flex-direction: column;
+}
+
+.asidelistbtn{
+    margin: 0px;
+    border: 0px;
+    border-bottom: 2px;
+    height: 6%;
+    width: 100%;
+    border-style: solid;
+    border-color: gray;
+    background-color: white;
 }
 
 #mainsystem{
@@ -125,7 +139,6 @@ aside{
 }
 
 #cash, #mdish, #odish, #back{
-    display: none;
     justify-content: center;
     align-items: center;
     position: absolute;
@@ -133,4 +146,26 @@ aside{
     left: 50%;
     transform: translate(-50%, -70%);
     font-size: x-large;
+}
+
+#statistics{
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    font-size: x-large;
+} 
+
+#mealsetting, #formula, #setting{
+    justify-content: center;
+    align-items: center;
+    font-size: x-large;
+}
+
+.statisticsindex{
+    width: 100%;
+    text-align: center;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
