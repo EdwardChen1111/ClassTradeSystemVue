@@ -25,6 +25,7 @@ jobs:
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@main
+      - uses: actions/setup-node@v1
       
       - name: Install & Build # 執行指令
         run:
@@ -35,5 +36,6 @@ jobs:
       - name: Deploy
         uses: JamesIves/github-pages-deploy-action@v4
         with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BRANCH: gh-pages # deploy 到 gh-pages 這個分支
-          FOLDER: dist # build 後的資料夾
+          FOLDER: ./dist # build 後的資料夾
