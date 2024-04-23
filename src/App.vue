@@ -5,15 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=0.5, maximum-scale=10.0, user-scalable=yes">
   </head>
   <body>
-    <header id="header" v-if="systemstatus">
+    <header id="header" v-if="SystemStatus">
       <button id="asidebtn" @click.self="ocaside"><img src="./asidebtn.png" @click.self="ocaside"></button>
       <span id="headerindex">校慶班級收銀系統</span>
-      <button class="headerbtn arrowbtn" id="cashbtn" v-if="cashbtn" @click="change('cashbtn')"><span @click="change('cashbtn')">收銀</span></button>
-      <button class="headerbtn arrowbtn" id="mdishbtn" v-if="mdishbtn" @click="change('mdishbtn')"><span @click="change('mdishbtn')">製餐</span></button>
-      <button class="headerbtn arrowbtn" id="odishbtn" v-if="odishbtn" @click="change('odishbtn')"><span @click="change('odishbtn')">出餐</span></button>
-      <button class="headerbtn arrowbtn" id="backbtn" v-if="backbtn" @click="change('backbtn')"><span @click="change('backbtn')">後台</span></button>
+      <button class="headerbtn arrowbtn" id="cashbtn" v-if="HeaderBtnStatus.cashbtn" @click="ChangePage('cash')"><span @click="ChangePage('cash')">收銀</span></button>
+      <button class="headerbtn arrowbtn" id="mdishbtn" v-if="HeaderBtnStatus.mdishbtn" @click="ChangePage('mdish')"><span @click="ChangePage('mdish')">製餐</span></button>
+      <button class="headerbtn arrowbtn" id="odishbtn" v-if="HeaderBtnStatus.odishbtn" @click="ChangePage('odish')"><span @click="ChangePage('odish')">出餐</span></button>
+      <button class="headerbtn arrowbtn" id="backbtn" v-if="HeaderBtnStatus.backbtn" @click="ChangePage('back')"><span @click="ChangePage('back')">後台</span></button>
     </header>
-    <main id="loginsystem" v-if="loginstatus">
+    <main id="loginsystem" v-if="LoginStatus">
       <form @submit.prevent="login" id="loginform">
         <legend>校慶班級收銀系統登入</legend>
         <p id="account">
@@ -32,23 +32,23 @@
         </p>
         <p id="submit">
           <button type="submit" class="arrowbtn" id="loginbtn"><span>登入</span></button>
-          <span id="wronglogin" v-if="wronglogin">帳號或密碼錯誤</span>
+          <span id="wronglogin" v-if="WrongLogin">帳號或密碼錯誤</span>
         </p>
       </form>
     </main>
-    <main id="mainsystem" v-if="systemstatus">
+    <main id="mainsystem" v-if="SystemStatus">
       <aside>
-        <h1 v-if="mdishstatus === backstatus">這裡什麼都沒有</h1>
-        <button class="asidelistbtn" v-if="mdishstatus">a餐</button>
-        <button class="asidelistbtn" v-if="mdishstatus">b餐</button>
-        <button class="asidelistbtn" v-if="mdishstatus">c餐</button>
-        <button class="asidelistbtn" v-if="mdishstatus">d餐</button>
-        <button class="asidelistbtn" v-if="backstatus" @click="caside('statistics')">統計</button>
-        <button class="asidelistbtn" v-if="backstatus" @click="caside('mealsetting')">售價</button>
-        <button class="asidelistbtn" v-if="backstatus" @click="caside('formula')">公式</button>
-        <button class="asidelistbtn" v-if="backstatus" @click="caside('setting')">設定</button>
+        <h1 v-if="MainPageStatus.mdish === MainPageStatus.back">這裡什麼都沒有</h1>
+        <button class="asidelistbtn" v-if="MainPageStatus.mdish">a餐</button>
+        <button class="asidelistbtn" v-if="MainPageStatus.mdish">b餐</button>
+        <button class="asidelistbtn" v-if="MainPageStatus.mdish">c餐</button>
+        <button class="asidelistbtn" v-if="MainPageStatus.mdish">d餐</button>
+        <button class="asidelistbtn" v-if="MainPageStatus.back" @click="ChangeBackPage('statistics')">統計</button>
+        <button class="asidelistbtn" v-if="MainPageStatus.back" @click="ChangeBackPage('mealsetting')">售價</button>
+        <button class="asidelistbtn" v-if="MainPageStatus.back" @click="ChangeBackPage('formula')">公式</button>
+        <button class="asidelistbtn" v-if="MainPageStatus.back" @click="ChangeBackPage('setting')">設定</button>
       </aside>
-      <dialog id="addorder" v-if="addorderstatus" @click="ocaddorder">
+      <dialog id="addorder" v-show="AddOrderStatus" @click="OCAddOrder">
         <table>
           <thead>
             <tr>
@@ -58,7 +58,7 @@
               <td>總計</td>
             </tr>
           </thead>
-          <tbody v-for="itempack in ordering" :key="itempack">
+          <tbody v-for="itempack in ordering.data" :key="itempack">
             <tr>
               <td>{{itempack.type}}</td>
               <td>{{itempack.price}}元</td>
@@ -68,20 +68,21 @@
           </tbody>
           <tfoot>
             <div>
-              <span>實收<input>元</span>
-              <span>應收{{total}}元</span>
+              <span>實收<input v-model="ordering.npay">元</span>
+              <span>應收{{ordering.total}}元</span>
+              <span>找零{{ordering.hpay}}元</span>
             </div>
             <div>
-              <button @click="ocaddorder">取消</button>
+              <button @click="OCAddOrder">取消</button>
               <p>
-                <span>需等待{{waittime}}分鐘</span>
+                <span>需等待{{ordering.time}}分鐘</span>
                 <button>送出</button>
               </p>
             </div>
           </tfoot>
         </table>
       </dialog>
-      <dialog id="detail" v-if="detailstatus" @click="ocdetail">
+      <dialog id="detail" v-if="DetailStatus" @click="OCDetail">
         <table>
           <caption>
             <span>單號:{{number}}</span>
@@ -100,12 +101,12 @@
             </tr>
           </tbody>
           <tfoot>
-            <button @click="ocdetail">完成</button>
+            <button @click="OCDetail">完成</button>
             <span>共{{total}}項</span>
           </tfoot>
         </table>
       </dialog>
-      <div id="cash" v-if="cashstatus">
+      <div id="cash" v-if="MainPageStatus.cash">
         <table>
           <caption>訂單資料</caption>
           <thead>
@@ -117,27 +118,27 @@
               <td>移除訂單</td>
             </tr>
           </thead>
-          <tbody v-for="itempack in cashthing" :key="itempack">
+          <tbody v-for="itempack in CashOdishData" :key="itempack">
             <tr>
               <td>{{itempack.num}}</td>
               <td><button @click="detail(itempack.order)">詳細內容</button></td>
               <td>{{itempack.price}}元</td>
-              <td>{{itempack.time}}min</td>
+              <td>{{CalTime(itempack.time)}}</td>
               <td><button @click="remove(itempack.order)">取消訂單</button></td>
             </tr>
           </tbody>
           <tfoot>
             <tr>
               <td>
-                <button @click="ocaddorder">新增訂單</button>
+                <button @click="OCAddOrder">新增訂單</button>
               </td>
             </tr>
           </tfoot>
         </table>
       </div>
-      <div id="mdish" v-if="mdishstatus">
+      <div id="mdish" v-if="MainPageStatus.mdish">
         <table>
-          <caption>{{mdishtype}}餐製作列表</caption>
+          <caption>{{MdishType}}製作列表</caption>
           <thead>
             <tr>
               <td>製作份數</td>
@@ -147,10 +148,10 @@
               <td>完成製作</td>
             </tr>
           </thead>
-          <tbody v-for="itempack in mdishthing" :key="itempack">
+          <tbody v-for="itempack in MdishData[MdishType]" :key="itempack">
             <tr>
-              <td>{{itempack.num}}</td>
-              <td>{{itempack.time}}min</td>
+              <td>{{itempack.count}}</td>
+              <td>{{CalTime(itempack.time)}}</td>
               <td><button @click="start(itempack.order)">開始製作</button></td>
               <td><button @click="stop(itempack.order)">暫停製作</button></td>
               <td><button @click="finish(itempack.order)">完成製作</button></td>
@@ -165,7 +166,7 @@
           </tfoot>
         </table>
       </div>
-      <div id="odish" v-if="odishstatus">
+      <div id="odish" v-if="MainPageStatus.odish">
         <table>
           <caption>訂單資料</caption>
           <thead>
@@ -176,12 +177,12 @@
               <td>完成訂單</td>
             </tr>
           </thead>
-          <tbody v-for="itempack in odishthing" :key="itempack">
+          <tbody v-for="itempack in CashOdishData" :key="itempack">
             <tr>
               <td>{{itempack.num}}</td>
               <td><button @click="detail(itempack.order)">詳細內容</button></td>
-              <td>{{itempack.time}}min</td>
-              <td><button @click="finish(itempack.order)">完成訂單</button></td>
+              <td>{{CalTime(itempack.time)}}</td>
+              <td><button @click="remove(itempack.order)">完成訂單</button></td>
             </tr>
           </tbody>
           <tfoot>
@@ -193,19 +194,19 @@
           </tfoot>
         </table>
       </div>
-      <div id="back" v-if="backstatus">
-        <div id="statistics" v-if="statisticsstatus">
+      <div id="back" v-if="MainPageStatus.back">
+        <div id="statistics" v-if="BackPageStatus.statistics">
           <h2>統計</h2>
           <div class="statisticsindex">
-            <span>收入{{statisticsthing.income}}元</span>
-            <span>支出{{statisticsthing.cost}}元</span>
+            <span>收入{{StatisticsData.income}}元</span>
+            <span>支出{{StatisticsData.cost}}元</span>
           </div>
           <div class="statisticsindex">
-            <span>最佳銷售:{{statisticsthing.best}}</span>
-            <span>最差銷售:{{statisticsthing.worst}}</span>
+            <span>最佳銷售:{{StatisticsData.best}}</span>
+            <span>最差銷售:{{StatisticsData.worst}}</span>
           </div>
         </div>
-        <div id="mealsetting" v-if="mealsettingstatus">
+        <div id="mealsetting" v-if="BackPageStatus.mealsetting">
           <table>
             <caption>餐點資料設定</caption>
             <thead>
@@ -219,16 +220,16 @@
                 <td>編輯</td>
               </tr>
             </thead>
-            <tbody>
+            <tbody  v-for="itempack in MealSettingData" :key="itempack">
               <tr>
-                <td>a餐</td>
-                <td>1000</td>
-                <td>500</td>
-                <td>1000</td>
-                <td>800</td>
-                <td>none</td>
+                <td>{{itempack.type}}</td>
+                <td>{{itempack.oprice}}</td>
+                <td>{{itempack.nprice}}</td>
+                <td>{{itempack.ocount}}</td>
+                <td>{{itempack.ncount}}</td>
+                <td>{{itempack.index}}</td>
                 <td>
-                  <button>編輯</button>
+                  <button @click="MealConfig(itempack.type)">編輯</button>
                 </td>
               </tr>
             </tbody>
@@ -251,9 +252,9 @@
             </tfoot>
           </table>
         </div>
-        <div id="formula" v-if="formulastatus">
-          <table>
-            <caption>a餐</caption>
+        <div id="formula" v-if="BackPageStatus.formula">
+          <table v-for="itempack in FormulaSettingData" :key="itempack">
+            <caption>{{itempack.type}}</caption>
             <thead>
               <tr>
                 <td>時間</td>
@@ -262,13 +263,20 @@
                 <td>回本率</td>
               </tr>
             </thead>
-            <tbody></tbody>
+            <tbody v-for="items in itempack.data" :key="items">
+              <tr>
+                <td>{{CalTime(items.time)}}</td>
+                <td>{{items.count}}</td>
+                <td>{{items.price}}</td>
+                <td>{{items.percent.min + '% ~ ' + items.percent.max + '%'}}</td>
+              </tr>
+            </tbody>
             <tfoot>
               <button>新增條件</button>
             </tfoot>
           </table>
         </div>
-        <div id="setting" v-if="settingstatus">
+        <div id="setting" v-if="BackPageStatus.setting">
           <table>
             <caption>已連線用戶</caption>
             <thead>
@@ -300,142 +308,451 @@
   import "./style.css"
   import "./main.js"
 
+  let COD = [
+    {
+      num: '000',
+      dish: {
+        a餐: 0,
+        b餐: 0,
+        c餐: 0,
+        d餐: 0,
+      },
+      price: 1000,
+      time: {
+        hour: 1,
+        min: 1,
+        sec: 1
+      },
+      status: true,// true(doing) or false(finish)
+      order: 0
+    },
+    {
+      num: '001',
+      dish: {
+        a餐: 1,
+        b餐: 1,
+        c餐: 1,
+        d餐: 1,
+      },
+      price: 5000,
+      time: {
+        hour: 1,
+        min: 1,
+        sec: 1
+      },
+      status: true,// true(doing) or false(finish)
+      order: 1
+    }
+  ];
+
+  let MDD = {
+    a餐: [
+      {
+        count: 2,
+        time: {
+          hour: 1,
+          min: 1,
+          sec: 1
+        },
+        order: 0
+      },
+      {
+        count: 1,
+        time: {
+          hour: 1,
+          min: 1,
+          sec: 1
+        },
+        order: 1
+      }
+    ],
+    b餐: [
+      {
+        count: 2,
+        time: {
+          hour: 1,
+          min: 1,
+          sec: 1
+        },
+        order: 0
+      },
+      {
+        count: 1,
+        time: {
+          hour: 1,
+          min: 1,
+          sec: 1
+        },
+        order: 1
+      }
+    ],
+    c餐: [
+      {
+        count: 2,
+        time: {
+          hour: 1,
+          min: 1,
+          sec: 1
+        },
+        order: 0
+      },
+      {
+        count: 1,
+        time: {
+          hour: 1,
+          min: 1,
+          sec: 1
+        },
+        order: 1
+      }
+    ],
+    d餐: [
+      {
+        count: 2,
+        time: {
+          hour: 1,
+          min: 1,
+          sec: 1
+        },
+        order: 0
+      },
+      {
+        count: 1,
+        time: {
+          hour: 1,
+          min: 1,
+          sec: 1
+        },
+        order: 1
+      }
+    ]
+  };
+
+  let SD = {
+    income: 100000,
+    cost: 1000000,
+    best: 'a餐',
+    worst: 'b餐',
+    data: []
+  }
+
+  let MSD = {
+    a餐: {
+      type: 'a餐',
+      oprice: 1000,
+      nprice: 1000,
+      ocount: 50000,
+      ncount: 50000,
+      index: 'none'
+    },
+    b餐: {
+      type: 'b餐',
+      oprice: 2000,
+      nprice: 2000,
+      ocount: 50000,
+      ncount: 50000,
+      index: 'none'
+    },
+    c餐: {
+      type: 'c餐',
+      oprice: 3000,
+      nprice: 3000,
+      ocount: 50000,
+      ncount: 50000,
+      index: 'none'
+    },
+    d餐: {
+      type: 'd餐',
+      oprice: 4000,
+      nprice: 4000,
+      ocount: 50000,
+      ncount: 50000,
+      index: 'none'
+    }
+  };
+
+  let FSD = [
+    {
+      type: 'a餐',
+      data: [
+        {
+          time: {
+            hour: 1,
+            min: 1,
+            sec: 1
+          },
+          count: 200,
+          price: 1000,
+          percent: {
+            min: 150,
+            max: 200
+          }
+        },
+        {
+          time: {
+            hour: 1,
+            min: 1,
+            sec: 1
+          },
+          count: 100,
+          price: 1000,
+          percent: {
+            min: 150,
+            max: 200
+          }
+        }
+      ]
+    },
+    {
+      type: 'b餐',
+      data: [
+        {
+          time: {
+            hour: 1,
+            min: 1,
+            sec: 1
+          },
+          count: 200,
+          price: 1000,
+          percent: {
+            min: 150,
+            max: 200
+          }
+        },
+        {
+          time: {
+            hour: 1,
+            min: 1,
+            sec: 1
+          },
+          count: 300,
+          price: 1000,
+          percent: {
+            min: 150,
+            max: 200
+          }
+        }
+      ]
+    },
+    {
+      type: 'c餐',
+      data: [
+        {
+          time: {
+            hour: 1,
+            min: 1,
+            sec: 1
+          },
+          count: 200,
+          price: 1000,
+          percent: {
+            min: 150,
+            max: 200
+          }
+        },
+        {
+          time: {
+            hour: 1,
+            min: 1,
+            sec: 1
+          },
+          count: 400,
+          price: 1000,
+          percent: {
+            min: 150,
+            max: 200
+          }
+        }
+      ]
+    },
+    {
+      type: 'd餐',
+      data: [
+        {
+          time: {
+            hour: 1,
+            min: 1,
+            sec: 1
+          },
+          count: 200,
+          price: 1000,
+          percent: {
+            min: 150,
+            max: 200
+          }
+        },
+        {
+          time: {
+            hour: 1,
+            min: 1,
+            sec: 1
+          },
+          count: 500,
+          price: 1000,
+          percent: {
+            min: 150,
+            max: 200
+          }
+        },
+      ]
+    }
+  ];
+
   export default {
     data () {
       return {
-        loginstatus: true,
-        wronglogin: false,
+        LoginStatus: true,
+        WrongLogin: false,
 
-        systemstatus: false,
-        cashbtn: false,
-        mdishbtn: false,
-        odishbtn: false,
-        backbtn: false,
-
-        cashstatus: false,
-        mdishstatus: false,
-        odishstatus: false,
-        backstatus: false,
-        statisticsstatus: true,
-        mealsettingstatus: false,
-        formulastatus: false,
-        settingstatus: false,
-
-        asidestatus: '-8%',
-        asidetype: false,
-
-        cashthing: [
-          {
-            "num": '#000',
-            "price": 1000,
-            "time": 5,
-            "order": 0
-          }
-        ],
-
-        mdishtype: 'yeeeeee',
-        mdishthing: [
-          {
-            "num": 1,
-            "time": 5,
-            "order": 0
-          }
-        ],
-        mdishlist: '',
-
-        odishthing: [
-          {
-            "num": '#000',
-            "time": 5,
-            "order": 0
-          }
-        ],
-        odishlist: '',
-
-        statisticsthing: {
-            income: 1000,
-            cost: 1000,
-            best: 'a餐',
-            worst: 'b餐'
+        SystemStatus: false,
+        AsideStatus: false,
+        AsidePos: '-9%',
+        
+        HeaderBtnStatus: {
+          cashbtn: false,
+          mdishbtn: false,
+          odishbtn: false,
+          backbtn: false
         },
 
-        addorderstatus: false,
-        detailstatus: false
+        MainPageStatus: {
+          cash: false,
+          mdish: false,
+          odish: false,
+          back: false
+        },
+
+        BackPageStatus: {
+          statistics: true,
+          mealsetting: false,
+          formula: false,
+          setting: false
+        },
+
+        CashOdishData: COD,
+        MdishData: MDD,
+        StatisticsData: SD,
+        MealSettingData: MSD,
+        FormulaSettingData: FSD,
+
+        MdishType: 'a餐',
+
+        AddOrderStatus: false,
+        DetailStatus: false,
+
+        ordering: {
+          data: [
+            {
+              type: 'a餐',
+              price: 1000,
+              count: 0
+            }
+          ],
+          npay: 0,
+          total: 0,
+          hpay: self.total - self.npay,
+          time: {
+            hour: 1,
+            min: 1,
+            sec: 1
+          }
+        }
       }
     },
     methods: {
       login () {
         if (this.passw === this.account) {
-          this.systemstatus = true;
-          this.loginstatus = false;
-          this.wronglogin = false;
+          this.SystemStatus = true;
+          this.LoginStatus = false;
+          this.WrongLogin = false;
+          this.MainPageStatus[this.account] = true;
 
-          if (this.account === 'cash') {
-            this.cashbtn = this.cashstatus = true;
-          } else if (this.account === 'mdish') {
-            this.mdishbtn = this.mdishstatus = true;
-          } else if (this.account === 'odish') {
-            this.odishbtn = this.odishstatus = true;
+          if (this.account === 'back') {
+            for (let i in this.HeaderBtnStatus) {
+              this.HeaderBtnStatus[i] = true;
+            }
           } else {
-            this.cashbtn = this.mdishbtn = this.odishbtn = this.backbtn = this.backstatus = true;
+            this.HeaderBtnStatus[this.account + 'btn'] = true;
           }
-
         } else {
-          this.wronglogin = true;
+          this.WrongLogin = true;
         }
       },
 
-      change (name) {
-        this.cashstatus = this.mdishstatus = this.odishstatus = this.backstatus = false;
+      ChangePage (name) {
+        for (let i in this.MainPageStatus) {
+          this.MainPageStatus[i] = false;
+        }
 
-        if (this.asidetype) {
+        if (this.AsideStatus) {
           this.ocaside();
         }
         
-        if (name == 'cashbtn') {
-          this.cashstatus = true;
-        } else if (name == 'mdishbtn') {
-          this.mdishstatus = true;
-        } else if (name == 'odishbtn') {
-          this.odishstatus = true;
-        } else if (name == 'backbtn') {
-          this.backstatus = true;
+        this.MainPageStatus[name] = true;
+      },
+
+      ChangeBackPage (name) {
+        for (let i in this.BackPageStatus) {
+          this.BackPageStatus[i] = false;
         }
+
+        this.ocaside();
+
+        this.BackPageStatus[name] = true;
+      },
+
+      CalTime (time) {
+        let word = '';
+
+        if (time.hour != 0) {
+          word += time.hour + 'h';
+        } else if (time.min != 0) {
+          word += time.min + 'h';
+        } else if (time.sec != 0) {
+          word += time.sec + 'h';
+        }
+
+        return word;
       },
 
       ocaside () {
-        this.asidetype = !this.asidetype;
-        if (this.asidetype) {
-          this.asidestatus = '0%';
+        this.AsideStatus = !this.AsideStatus;
+
+        if (this.AsideStatus) {
+          this.AsidePos = '0%';
         } else {
-          this.asidestatus = '-8%';
+          this.AsidePos = '-9%';
         }
       },
 
-      caside (name) {
-        this.statisticsstatus = this.mealsettingstatus = this.formulastatus = this.settingstatus = false;
-        this.ocaside();
-        if (name == 'statistics') {
-          this.statisticsstatus = true;
-        } else if (name == 'mealsetting') {
-          this.mealsettingstatus = true;
-        } else if (name == 'formula') {
-          this.formulastatus = true;
-        } else if (name == 'setting') {
-          this.settingstatus = true;
+      OCAddOrder () {
+        this.AddOrderStatus = !this.AddOrderStatus;
+
+        if (this.AddOrderStatus) {
+          for (let i in this.ordering.data) {
+            this.ordering.data[i].count = 0;
+          }
         }
       },
 
-      ocaddorder () {
-        this.addorderstatus = !this.addorderstatus;
+      OCDetail () {
+        this.DetailStatus = !this.DetailStatus;
       },
 
-      ocdetail () {
-        this.detailstatus = !this.detailstatus;
+      remove (order) {
+        this.CashOdishData.splice(order,1);
       },
 
-      remove () {
+      start (order) {
+        alert(order);
+      },
 
+      stop (order) {
+        alert(order);
+      },
+
+      finish (order) {
+        this.MdishData[this.MdishType].splice(order,1);
       }
     }
   }
@@ -443,7 +760,7 @@
 
 <style>
   aside {
-    left: v-bind(asidestatus);
+    left: v-bind(AsidePos);
     transition: all 1s;
   }
 </style>

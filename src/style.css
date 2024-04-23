@@ -156,7 +156,14 @@ aside{
     font-size: x-large;
 } 
 
-#mealsetting, #formula, #setting{
+#formula{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: x-large;
+}
+
+#mealsetting, #setting{
     justify-content: center;
     align-items: center;
     font-size: x-large;
