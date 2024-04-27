@@ -6,7 +6,7 @@
   </head>
   <body>
     <transition name="dialog" @after-leave="OCAddOrder(false)">
-      <dialog ref="AddOrder" v-show="AddOrderStatus" id="addorder" @click="AOHCOS">
+      <dialog ref="AddOrder" v-show="AddOrderStatus" id="addorder" @click="AOHCOS" @cancel.prevent>
         <table>
           <thead>
             <tr>
@@ -42,7 +42,7 @@
       </dialog>
     </transition>
     <transition name="dialog" @after-leave="OCDetail(false)">
-      <dialog ref="Detail" id="detail" v-show="DetailStatus" @click="DHCOS">
+      <dialog ref="Detail" id="detail" v-show="DetailStatus" @click="DHCOS" @cancel.prevent>
         <table>
           <caption>
             <span>單號:1<!--{{number}}--></span>
@@ -794,11 +794,11 @@
   });
 
   watch(AddOrderStatus, (isOpen) => {
-    if (isOpen) OCAddOrder(isOpen);
+    if (isOpen) OCAddOrder(true);
   });
 
   watch(DetailStatus, (isOpen) => {
-    if (isOpen) OCDetail(isOpen);
+    if (isOpen) OCDetail(true);
   });
 </script>
 
