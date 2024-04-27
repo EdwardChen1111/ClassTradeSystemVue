@@ -176,3 +176,22 @@ aside{
     justify-content: space-between;
     align-items: center;
 }
+
+#detail::backdrop {
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+#addorder::backdrop {
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+#addorder, #detail {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin: auto;
+    border-radius: 10px;
+    padding: 20px;
+    background-color: antiquewhite;
+    border: none;
+}
