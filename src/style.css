@@ -188,15 +188,11 @@ aside{
     align-items: center;
 }
 
-#detail::backdrop {
+#detail::backdrop, #addorder::backdrop, #sendsetting::backdrop{
     background-color: rgba(0, 0, 0, 0.5);
 }
 
-#addorder::backdrop {
-    background-color: rgba(0, 0, 0, 0.5);
-}
-
-#addorder, #detail {
+#addorder, #detail, #sendsetting{
     display: flex;
     flex-direction: column;
     gap: 16px;
@@ -205,4 +201,19 @@ aside{
     padding: 20px;
     background-color: antiquewhite;
     border: none;
+}
+
+.tfoot{
+    display: flex;
+    width: 100%;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.tfoot div{
+    display: flex;
+    width: 100%;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: space-between;
 }

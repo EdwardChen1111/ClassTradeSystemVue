@@ -20,25 +20,25 @@
             <tr>
               <td>{{itempack.type}}</td>
               <td>{{itempack.price}}元</td>
-              <td><input v-model="itempack.count"></td>
+              <td><input type="number" v-model="itempack.count"></td>
               <td>{{itempack.price*itempack.count}}元</td>
             </tr>
           </tbody>
-          <tfoot>
-            <div>
-              <span>實收<input v-model="ordering.npay">元</span>
-              <span>應收{{CalcTotal()}}元</span>
-              <span>找零{{CalcHpay()}}元</span>
-            </div>
-            <div>
-              <button @click="AddOrderStatus = false">取消</button>
-              <p>
-                <span>需等待{{CalTime(CalOrderTime())}}</span>
-                <button @click="SendOrder">送出</button>
-              </p>
-            </div>
-          </tfoot>
         </table>
+        <div class="tfoot">
+          <div>
+            <span>實收<input type="number" v-model="ordering.npay">元</span>
+            <span>應收{{CalcTotal()}}元</span>
+            <span>找零{{CalcHpay()}}元</span>
+          </div>
+          <div>
+            <button @click="AddOrderStatus = false">取消</button>
+            <p>
+              <span>需等待{{CalTime(CalOrderTime())}}</span>
+              <button @click="SendOrder">送出</button>
+            </p>
+          </div>
+        </div>
       </dialog>
     </transition>
     <transition name="dialog" @after-leave="OCDetail(false)">
@@ -59,6 +59,53 @@
           <tfoot>
             <button @click="DetailStatus = false">完成</button>
             <span>共{{DetailThing.total}}項</span>
+          </tfoot>
+        </table>
+      </dialog>
+    </transition>
+    <transition name="dialog" @after-leave="OCSendSetting(false)">
+      <dialog ref="SendSetting" v-show="SendSettingStatus" id="sendsetting" @click="SSHCOS" @cancel.prevent>
+        <table>
+          <caption>餐點資料設定</caption>
+          <thead>
+            <tr>
+              <td>品項</td>
+              <td>原價</td>
+              <td>折價</td>
+              <td>進貨數量</td>
+              <td>剩餘數量</td>
+              <td>製作時間</td>
+              <td>同時製作上限</td>
+              <td>內容</td>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><input v-model="SendSettingData.type"></td>
+              <td><input type="number" v-model="SendSettingData.oprice"></td>
+              <td><input type="number" v-model="SendSettingData.nprice"></td>
+              <td><input type="number" v-model="SendSettingData.ocount"></td>
+              <td><input type="number" v-model="SendSettingData.ncount"></td>
+              <td><input type="number" v-model="SendSettingData.mtime"></td>
+              <td><input type="number" v-model="SendSettingData.ulimit"></td>
+              <td><input :disabled="SendSettingData.index == 'none'" v-model="SendSettingData.index"></td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr>
+              <td>
+                <button @click="SendSettingStatus = false">取消</button>
+              </td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td>
+                <button @click="SendSetting">保存設定</button>
+              </td>
+            </tr>
           </tfoot>
         </table>
       </dialog>
@@ -186,13 +233,6 @@
               <td><button @click="complete(index)">完成製作</button></td>
             </tr>
           </tbody>
-          <tfoot>
-            <tr>
-              <td>
-                <button>重新整理</button>
-              </td>
-            </tr>
-          </tfoot>
         </table>
       </div>
       <div id="odish" v-if="MainPageStatus.odish">
@@ -251,7 +291,7 @@
                 <td>編輯</td>
               </tr>
             </thead>
-            <tbody  v-for="itempack in MealSettingData" :key="itempack">
+            <tbody  v-for="(itempack, index) in MealSettingData" :key="itempack">
               <tr>
                 <td>{{itempack.type}}</td>
                 <td>{{itempack.oprice}}</td>
@@ -262,7 +302,7 @@
                 <td>{{itempack.ulimit}}</td>
                 <td>{{itempack.index}}</td>
                 <td>
-                  <button @click="MealConfig(itempack.type)">編輯</button>
+                  <button @click="MealConfig(index)">編輯</button>
                 </td>
               </tr>
             </tbody>
@@ -274,14 +314,12 @@
                 <td></td>
                 <td></td>
                 <td></td>
+                <td></td>
                 <td>
-                  <button>新增品項</button>
+                  <button @click="MealConfig('AddDish')">新增品項</button>
                 </td>
                 <td>
-                  <button>新增套餐</button>
-                </td>
-                <td>
-                  <button>保存設定</button>
+                  <button @click="MealConfig('AddCombo')">新增套餐</button>
                 </td>
               </tr>
             </tfoot>
@@ -523,9 +561,14 @@
 
     DetailStatus = ref(false),
     AddOrderStatus = ref(false),
+    SendSettingStatus = ref(false),
 
     AddOrder = ref(),
     Detail = ref(),
+    SendSetting = ref(),
+
+    SendSettingData = ref({}),
+
     DetailThing = ref({
       data: {},
       total: 0,
@@ -690,19 +733,6 @@
     ModifyMdish('complete', index);
   }
 
-  function OAddOrder () {
-    ordering.value.data.splice(0, ordering.value.data.length);
-    for (let i in MealSettingData.value) {
-      let temp = MealSettingData.value[i];
-      ordering.value.data.push({
-        type: temp.type,
-        price: temp.nprice,
-        count: 0
-      })
-    }
-    AddOrderStatus.value = true;
-  }
-
   function SendOrder () {
     let last, time = 0;
     if (CashOdishData.value[CashOdishData.value.length - 1] == undefined) {
@@ -733,6 +763,19 @@
     AddOrderStatus.value = false;
   }
 
+  function OAddOrder () {
+    ordering.value.data.splice(0, ordering.value.data.length);
+    for (let i in MealSettingData.value) {
+      let temp = MealSettingData.value[i];
+      ordering.value.data.push({
+        type: temp.type,
+        price: temp.nprice,
+        count: 0
+      })
+    }
+    AddOrderStatus.value = true;
+  }
+
   function detail (index) {
     let TTotal = 0;
     for (let i in CashOdishData.value[index].dish) {
@@ -742,6 +785,36 @@
     DetailThing.value.total = TTotal;
 
     DetailStatus.value = true;
+  }
+
+  function MealConfig (index) {
+    if (index == 'AddDish') {
+      SendSettingData.value = {
+        type: '',
+        oprice: 0,
+        nprice: 0,
+        ocount: 0,
+        ncount: 0,
+        mtime: 0,
+        ulimit: 2,
+        index: 'none'
+      };
+    } else if (index == 'AddCombo') {
+      SendSettingData.value = {
+        type: '',
+        oprice: 0,
+        nprice: 0,
+        ocount: 0,
+        ncount: 0,
+        mtime: 0,
+        ulimit: 2,
+        index: ''
+      };
+    } else {
+      SendSettingData.value = MealSettingData.value[index];
+    }
+
+    SendSettingStatus.value = true;
   }
 
   function OCAddOrder (show) {
@@ -759,6 +832,15 @@
       Detail.value.showModal();
     } else {
       Detail.value.close();
+    }
+  }
+
+  function OCSendSetting (show) {
+    if (!SendSetting.value) return;
+    if (show) {
+      SendSetting.value.showModal();
+    } else {
+      SendSetting.value.close();
     }
   }
 
@@ -780,9 +862,19 @@
     }
   }
 
+  function SSHCOS ({ clientX: x, clientY: y }) {
+    if (!SendSetting.value) return;
+
+    const { left, right, top, bottom } = SendSetting.value.getBoundingClientRect();
+    if (x < left || x > right || y < top || y > bottom) {
+      SendSettingStatus.value = false;
+    }
+  }
+
   onMounted(() => {
     if (AddOrderStatus.value) OCAddOrder(true);
     if (DetailStatus.value) OCDetail(true);
+    if (SendSettingStatus.value) OCSendSetting(true);
   });
 
   watch(AddOrderStatus, (isOpen) => {
@@ -791,6 +883,10 @@
 
   watch(DetailStatus, (isOpen) => {
     if (isOpen) OCDetail(true);
+  });
+
+  watch(SendSettingStatus, (isOpen) => {
+    if (isOpen) OCSendSetting(true);
   });
 </script>
 
@@ -825,6 +921,11 @@
 
   .dialog-enter-from#detail,
   .dialog-leave-to#detail {
+    transform: scale(0.9) translateY(-2rem);
+  }
+
+  .dialog-enter-from#sendsetting,
+  .dialog-leave-to#sendsetting {
     transform: scale(0.9) translateY(-2rem);
   }
 </style>
