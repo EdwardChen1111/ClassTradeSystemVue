@@ -578,9 +578,12 @@
     for (let i in MainPageStatus.value) {
       MainPageStatus.value[i] = false;
     }
-
     if (AsideStatus.value) {
       ocaside();
+    }
+    if (name == 'mdish' && MdishData.value[0].type != undefined) {
+      MdishType.value = MdishData.value[0].type;
+      ChangeMdishPage(MdishType.value);
     }
     
     MainPageStatus.value[name] = true;
@@ -645,7 +648,7 @@
     for (let i of ordering.value.data) {
       for (let j of MealSettingData.value) {
         if (j.type == i.type) {
-          time = Math.max(time, j.mtime*i.count);
+          time = Math.max(time, j.mtime*Math.ceil(i.count / j.ulimit));
           break;
         }
       }
@@ -712,14 +715,7 @@
       last = CashOdishData.value[CashOdishData.value.length - 1];
     }
 
-    for (let i of ordering.value.data) {
-      for (let j of MealSettingData.value) {
-        if (j.type == i.type) {
-          time = Math.max(time, j.mtime*i.count);
-          break;
-        }
-      }
-    }
+    time = CalOrderTime();
     
     let temp = {
       num: last.num + 1,
@@ -734,7 +730,6 @@
       temp.dish[ordering.value.data[i].type] = ordering.value.data[i].count;
     }
     ModifyOrder('add', temp);
-    //CashOdishData.value.push(temp);
     AddOrderStatus.value = false;
   }
 
