@@ -347,7 +347,7 @@
 
   let COD, MDD, SD, MSD, FSD;
 
-  let ServerURL = 'http://edwardChen1111.ddns.net:5000';
+  let ServerURL = 'https://edwardChen1111.ddns.net:5000';
   let token = 'first';
 
   let AutoUpdate;
