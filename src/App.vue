@@ -27,14 +27,14 @@
           <tfoot>
             <div>
               <span>實收<input v-model="ordering.npay">元</span>
-              <span>應收{{ordering.total}}元</span>
-              <span>找零{{ordering.hpay}}元</span>
+              <span>應收{{CalcTotal()}}元</span>
+              <span>找零{{CalcHpay()}}元</span>
             </div>
             <div>
               <button @click="AddOrderStatus = false">取消</button>
               <p>
-                <span>需等待{{CalTime(ordering.time)}}分鐘</span>
-                <button>送出</button>
+                <span>需等待{{CalTime(CalOrderTime())}}</span>
+                <button @click="SendOrder">送出</button>
               </p>
             </div>
           </tfoot>
@@ -44,25 +44,21 @@
     <transition name="dialog" @after-leave="OCDetail(false)">
       <dialog ref="Detail" id="detail" v-show="DetailStatus" @click="DHCOS" @cancel.prevent>
         <table>
-          <caption>
-            <span>單號:1<!--{{number}}--></span>
-            <span>需等待1<!--{{time}}--></span>
-          </caption>
           <thead>
             <tr>
               <td>餐點</td>
               <td>數量</td>
             </tr>
           </thead>
-          <tbody v-for="itempack in detailthing" :key="itempack">
+          <tbody v-for="(value, key) in DetailThing.data" :key="key">
             <tr>
-              <td>{{itempack.type}}</td>
-              <td>{{itempack.count}}</td>
+              <td>{{key}}</td>
+              <td>{{value}}</td>
             </tr>
           </tbody>
           <tfoot>
             <button @click="DetailStatus = false">完成</button>
-            <span>共1<!--{{total}}-->項</span>
+            <span>共{{DetailThing.total}}項</span>
           </tfoot>
         </table>
       </dialog>
@@ -78,9 +74,35 @@
     <main id="loginsystem" v-if="!SystemStatus">
       <form @submit.prevent="login" id="loginform">
         <legend>校慶班級收銀系統登入</legend>
+        <p id="class">
+          <label id="labela">班級</label>
+          <select size="0" name="class" class="loginselect" v-model="userinfo.class">
+            <option value="none" selected disabled>請選擇班級</option>
+            <option value="201">201</option>
+            <option value="202">202</option>
+            <option value="203">203</option>
+            <option value="204">204</option>
+            <option value="205">205</option>
+            <option value="206">206</option>
+            <option value="207">207</option>
+            <option value="208">208</option>
+            <option value="209">209</option>
+            <option value="210">210</option>
+            <option value="211">211</option>
+            <option value="212">212</option>
+            <option value="213">213</option>
+            <option value="214">214</option>
+            <option value="215">215</option>
+            <option value="216">216</option>
+            <option value="217">217</option>
+            <option value="218">218</option>
+            <option value="219">219</option>
+            <option value="220">220</option>
+          </select>
+        </p>
         <p id="account">
           <label id="labela">帳號</label>
-          <select size="0" name="account" id="acselect" v-model="userinfo.account">
+          <select size="0" name="account" class="loginselect" v-model="userinfo.account">
             <option value="none" selected disabled>請選擇職位</option>
             <option value="cash">收銀</option>
             <option value="mdish">製餐</option>
@@ -101,14 +123,17 @@
     <main id="mainsystem" v-if="SystemStatus">
       <aside>
         <h1 v-if="MainPageStatus.mdish === MainPageStatus.back">這裡什麼都沒有</h1>
-        <button class="asidelistbtn" v-if="MainPageStatus.mdish">a餐</button>
-        <button class="asidelistbtn" v-if="MainPageStatus.mdish">b餐</button>
-        <button class="asidelistbtn" v-if="MainPageStatus.mdish">c餐</button>
-        <button class="asidelistbtn" v-if="MainPageStatus.mdish">d餐</button>
-        <button class="asidelistbtn" v-if="MainPageStatus.back" @click="ChangeBackPage('statistics')">統計</button>
-        <button class="asidelistbtn" v-if="MainPageStatus.back" @click="ChangeBackPage('mealsetting')">售價</button>
-        <button class="asidelistbtn" v-if="MainPageStatus.back" @click="ChangeBackPage('formula')">公式</button>
-        <button class="asidelistbtn" v-if="MainPageStatus.back" @click="ChangeBackPage('setting')">設定</button>
+        <div class="asidediv" v-if="MainPageStatus.mdish">
+          <div class="asidediv" v-for="itempack in MealSettingData" :key="itempack.type">
+            <button class="asidelistbtn" @click="ChangeMdishPage(itempack.type, index)">{{itempack.type}}</button>
+          </div>
+        </div>
+        <div class="asidediv" v-if="MainPageStatus.back">
+          <button class="asidelistbtn" @click="ChangeBackPage('statistics')">統計</button>
+          <button class="asidelistbtn" @click="ChangeBackPage('mealsetting')">售價</button>
+          <button class="asidelistbtn" @click="ChangeBackPage('formula')">公式</button>
+          <button class="asidelistbtn" @click="ChangeBackPage('setting')">設定</button>
+        </div>
       </aside>
       <div id="cash" v-if="MainPageStatus.cash">
         <table>
@@ -122,19 +147,19 @@
               <td>移除訂單</td>
             </tr>
           </thead>
-          <tbody v-for="itempack in CashOdishData" :key="itempack">
-            <tr>
+          <tbody v-for="(itempack, index) in CashOdishData" :key="index">
+            <tr v-if="itempack.show">
               <td>{{itempack.num}}</td>
-              <td><button @click="detail(itempack.order)">詳細內容</button></td>
+              <td><button @click="detail(index)">詳細內容</button></td>
               <td>{{itempack.price}}元</td>
               <td>{{CalTime(itempack.time)}}</td>
-              <td><button @click="remove(itempack.order)">取消訂單</button></td>
+              <td><button @click="RemoveDish(index)">取消訂單</button></td>
             </tr>
           </tbody>
           <tfoot>
             <tr>
               <td>
-                <button @click="AddOrderStatus = true">新增訂單</button>
+                <button @click="OAddOrder">新增訂單</button>
               </td>
             </tr>
           </tfoot>
@@ -152,13 +177,13 @@
               <td>完成製作</td>
             </tr>
           </thead>
-          <tbody v-for="itempack in MdishData[MdishType]" :key="itempack">
+          <tbody v-for="(itempack, index) in NMDD" :key="index">
             <tr>
               <td>{{itempack.count}}</td>
               <td>{{CalTime(itempack.time)}}</td>
-              <td><button @click="start(itempack.order)">開始製作</button></td>
-              <td><button @click="stop(itempack.order)">暫停製作</button></td>
-              <td><button @click="finish(itempack.order)">完成製作</button></td>
+              <td><button @click="start(index)">開始製作</button></td>
+              <td><button @click="stop(index)">暫停製作</button></td>
+              <td><button @click="complete(index)">完成製作</button></td>
             </tr>
           </tbody>
           <tfoot>
@@ -181,12 +206,12 @@
               <td>完成訂單</td>
             </tr>
           </thead>
-          <tbody v-for="itempack in CashOdishData" :key="itempack">
-            <tr>
+          <tbody v-for="(itempack, index) in CashOdishData" :key="itempack">
+            <tr v-if="itempack.show">
               <td>{{itempack.num}}</td>
-              <td><button @click="detail(itempack.order)">詳細內容</button></td>
+              <td><button @click="detail(index)">詳細內容</button></td>
               <td>{{CalTime(itempack.time)}}</td>
-              <td><button @click="remove(itempack.order)">完成訂單</button></td>
+              <td><button @click="finish(index)">完成訂單</button></td>
             </tr>
           </tbody>
           <tfoot>
@@ -220,6 +245,8 @@
                 <td>折價</td>
                 <td>進貨數量</td>
                 <td>剩餘數量</td>
+                <td>製作時間</td>
+                <td>同時製作上限</td>
                 <td>內容</td>
                 <td>編輯</td>
               </tr>
@@ -231,6 +258,8 @@
                 <td>{{itempack.nprice}}</td>
                 <td>{{itempack.ocount}}</td>
                 <td>{{itempack.ncount}}</td>
+                <td>{{CalTime(itempack.mtime)}}</td>
+                <td>{{itempack.ulimit}}</td>
                 <td>{{itempack.index}}</td>
                 <td>
                   <button @click="MealConfig(itempack.type)">編輯</button>
@@ -239,6 +268,8 @@
             </tbody>
             <tfoot>
               <tr>
+                <td></td>
+                <td></td>
                 <td></td>
                 <td></td>
                 <td></td>
@@ -311,297 +342,143 @@
 <script setup>
   import "./style.css"
   import "./main.js"
+  import axios from "axios";
   import { ref, onMounted, watch } from "vue";
 
-  let COD = [
-    {
-      num: '000',
-      dish: {
-        a餐: 0,
-        b餐: 0,
-        c餐: 0,
-        d餐: 0,
-      },
-      price: 1000,
-      time: {
-        hour: 1,
-        min: 1,
-        sec: 1
-      },
-      status: true,// true(doing) or false(finish)
-      order: 0
-    },
-    {
-      num: '001',
-      dish: {
-        a餐: 1,
-        b餐: 1,
-        c餐: 1,
-        d餐: 1,
-      },
-      price: 5000,
-      time: {
-        hour: 1,
-        min: 1,
-        sec: 1
-      },
-      status: true,// true(doing) or false(finish)
-      order: 1
-    }
-  ];
+  let COD, MDD, SD, MSD, FSD;
 
-  let MDD = {
-    a餐: [
-      {
-        count: 2,
-        time: {
-          hour: 1,
-          min: 1,
-          sec: 1
-        },
-        order: 0
-      },
-      {
-        count: 1,
-        time: {
-          hour: 1,
-          min: 1,
-          sec: 1
-        },
-        order: 1
-      }
-    ],
-    b餐: [
-      {
-        count: 2,
-        time: {
-          hour: 1,
-          min: 1,
-          sec: 1
-        },
-        order: 0
-      },
-      {
-        count: 1,
-        time: {
-          hour: 1,
-          min: 1,
-          sec: 1
-        },
-        order: 1
-      }
-    ],
-    c餐: [
-      {
-        count: 2,
-        time: {
-          hour: 1,
-          min: 1,
-          sec: 1
-        },
-        order: 0
-      },
-      {
-        count: 1,
-        time: {
-          hour: 1,
-          min: 1,
-          sec: 1
-        },
-        order: 1
-      }
-    ],
-    d餐: [
-      {
-        count: 2,
-        time: {
-          hour: 1,
-          min: 1,
-          sec: 1
-        },
-        order: 0
-      },
-      {
-        count: 1,
-        time: {
-          hour: 1,
-          min: 1,
-          sec: 1
-        },
-        order: 1
-      }
-    ]
-  };
+  let ServerURL = 'http://localhost:5000';
+  let token = 'first';
 
-  let SD = {
-    income: 100000,
-    cost: 1000000,
-    best: 'a餐',
-    worst: 'b餐',
-    data: []
+  let AutoUpdate;
+
+  async function GetToken () {
+    await axios({
+      method: 'post',
+      baseURL: ServerURL,
+      url: '/login',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': token
+      },
+      data: userinfo.value
+    })
+    .then((result) => { 
+      token = result.data.token;
+      axios.defaults.headers.common['Authorization'] = token;
+    })
+    .catch((err) => { 
+      console.log(err.response.data);
+    });
+    return token != 'first';
   }
 
-  let MSD = {
-    a餐: {
-      type: 'a餐',
-      oprice: 1000,
-      nprice: 1000,
-      ocount: 50000,
-      ncount: 50000,
-      index: 'none'
-    },
-    b餐: {
-      type: 'b餐',
-      oprice: 2000,
-      nprice: 2000,
-      ocount: 50000,
-      ncount: 50000,
-      index: 'none'
-    },
-    c餐: {
-      type: 'c餐',
-      oprice: 3000,
-      nprice: 3000,
-      ocount: 50000,
-      ncount: 50000,
-      index: 'none'
-    },
-    d餐: {
-      type: 'd餐',
-      oprice: 4000,
-      nprice: 4000,
-      ocount: 50000,
-      ncount: 50000,
-      index: 'none'
-    }
-  };
+  async function InitData () {
+    let success = false;
+    await axios({
+      method: 'get',
+      baseURL: ServerURL,
+      url: '/init',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    })
+    .then((result) => { 
+      console.log(result);
+      COD = result.data.COD;
+      MDD = result.data.MDD;
+      SD = result.data.SD;
+      MSD = result.data.MSD;
+      FSD = result.data.FSD;
+      success = true;
+    })
+    .catch((err) => { 
+      console.log(err);
+      success = false;
+    });
 
-  let FSD = [
-    {
-      type: 'a餐',
-      data: [
-        {
-          time: {
-            hour: 1,
-            min: 1,
-            sec: 1
+    CashOdishData.value.push(...COD);
+    MdishData.value.push(...MDD);
+    StatisticsData.value = SD;
+    MealSettingData.value.push(...MSD);
+    FormulaSettingData.value.push(...FSD);
+
+    AutoUpdate = setInterval(
+      function () {
+        axios({
+          method: 'get',
+          baseURL: ServerURL,
+          url: '/checkUpdate',
+          timeout: 1000,
+          headers: {
+            'Content-Type': 'application/json',
           },
-          count: 200,
-          price: 1000,
-          percent: {
-            min: 150,
-            max: 200
-          }
-        },
-        {
-          time: {
-            hour: 1,
-            min: 1,
-            sec: 1
-          },
-          count: 100,
-          price: 1000,
-          percent: {
-            min: 150,
-            max: 200
-          }
-        }
-      ]
-    },
-    {
-      type: 'b餐',
-      data: [
-        {
-          time: {
-            hour: 1,
-            min: 1,
-            sec: 1
-          },
-          count: 200,
-          price: 1000,
-          percent: {
-            min: 150,
-            max: 200
-          }
-        },
-        {
-          time: {
-            hour: 1,
-            min: 1,
-            sec: 1
-          },
-          count: 300,
-          price: 1000,
-          percent: {
-            min: 150,
-            max: 200
-          }
-        }
-      ]
-    },
-    {
-      type: 'c餐',
-      data: [
-        {
-          time: {
-            hour: 1,
-            min: 1,
-            sec: 1
-          },
-          count: 200,
-          price: 1000,
-          percent: {
-            min: 150,
-            max: 200
-          }
-        },
-        {
-          time: {
-            hour: 1,
-            min: 1,
-            sec: 1
-          },
-          count: 400,
-          price: 1000,
-          percent: {
-            min: 150,
-            max: 200
-          }
-        }
-      ]
-    },
-    {
-      type: 'd餐',
-      data: [
-        {
-          time: {
-            hour: 1,
-            min: 1,
-            sec: 1
-          },
-          count: 200,
-          price: 1000,
-          percent: {
-            min: 150,
-            max: 200
-          }
-        },
-        {
-          time: {
-            hour: 1,
-            min: 1,
-            sec: 1
-          },
-          count: 500,
-          price: 1000,
-          percent: {
-            min: 150,
-            max: 200
-          }
-        },
-      ]
-    }
-  ];
+        })
+        .then((result) => { 
+          console.log(result.data);
+          if (result.data == 'noUpdate') return;
+          CashOdishData.value.splice(0, CashOdishData.value.length, ...result.data.COD);
+          MdishData.value.splice(0, MdishData.value.length, ...result.data.MDD);
+          StatisticsData.value = result.data.SD;
+          MealSettingData.value.splice(0, MealSettingData.value.length, ...result.data.MSD);
+          FormulaSettingData.value.splice(0, FormulaSettingData.value.length, ...result.data.FSD);
+        })
+        .catch((err) => { 
+          console.log(err);
+        });
+      },1000
+    );
+    
+    return success;
+  }
+
+  async function ModifyOrder (prefix, dict) {
+    await axios({
+      method: 'post',
+      baseURL: ServerURL,
+      url: '/modifyOrder',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      data: {
+        doing: prefix,
+        dict: dict
+      }
+    })
+    .then((result) => { 
+      console.log(result);
+    })
+    .catch((err) => { 
+      console.log(err.response.data);
+    });
+
+    return;
+  }
+
+  async function ModifyMdish (prefix, index) {
+    const dict = NMDD.value[index];
+    await axios({
+      method: 'post',
+      baseURL: ServerURL,
+      url: '/modifyMdish',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      data: {
+        doing: prefix,
+        dict: dict,
+        type: MdishType.value
+      }
+    })
+    .then((result) => { 
+      console.log(result);
+    })
+    .catch((err) => { 
+      console.log(err.response.data);
+    });
+
+    return;
+  }
 
   let SystemStatus = ref(false),
     WrongLogin = ref(false),
@@ -635,19 +512,24 @@
       setting: false
     }),
 
-    CashOdishData = ref(COD),
-    MdishData = ref(MDD),
-    StatisticsData = ref(SD),
-    MealSettingData = ref(MSD),
-    FormulaSettingData = ref(FSD),
+    CashOdishData = ref([]),
+    MdishData = ref([]),
+    StatisticsData = ref({}),
+    MealSettingData = ref([]),
+    FormulaSettingData = ref([]),
 
-    MdishType = ref('a餐'),
+    MdishType = ref(''),
+    NMDD = ref([]),
 
     DetailStatus = ref(false),
     AddOrderStatus = ref(false),
 
     AddOrder = ref(),
     Detail = ref(),
+    DetailThing = ref({
+      data: {},
+      total: 0,
+    }),
     
     ordering = ref({
       data: [
@@ -659,30 +541,37 @@
       ],
       npay: 0,
       total: 0,
-      hpay: self.total - self.npay,
-      time: {
-        hour: 1,
-        min: 1,
-        sec: 1
-      }
+      time: 0
     });
     
-  function login () {
-    if (userinfo.value.passw == userinfo.value.account) {
-      SystemStatus.value = true;
-      WrongLogin.value = false;
-      MainPageStatus.value[userinfo.value.account] = true;
-
-      if (userinfo.value.account == 'back') {
-        for (let i in HeaderBtnStatus.value) {
-          HeaderBtnStatus.value[i] = true;
-        }
-      } else {
-        HeaderBtnStatus.value[userinfo.value.account + 'btn'] = true;
-      }
-    } else {
+  async function login () {
+    let temp = await GetToken();
+    if (!temp) {
       WrongLogin.value = true;
+      return;
     }
+
+    let init = await InitData();
+    if (!init) {
+      alert('伺服器通信失敗');
+      return;
+    }
+
+    SystemStatus.value = true;
+    WrongLogin.value = false;
+    MainPageStatus.value[userinfo.value.account] = true;
+
+    if (userinfo.value.account == 'mdish' && MealSettingData.value[0] != undefined) {
+      ChangeMdishPage(MealSettingData.value[0].type);
+      return;
+    } else if (userinfo.value.account == 'back') {
+      for (let i in HeaderBtnStatus.value) {
+        HeaderBtnStatus.value[i] = true;
+      }
+      ChangeMdishPage(MealSettingData.value[0].type);
+      return;
+    }
+    HeaderBtnStatus.value[userinfo.value.account + 'btn'] = true;
   }
 
   function ChangePage (name) {
@@ -706,18 +595,63 @@
     ocaside();
   }
 
+  function ChangeMdishPage (type) {
+    MdishType.value = type;
+    MdishData.value.forEach((item) => {
+      if (item.type == type) {
+        NMDD.value.splice(0, NMDD.value.length, ...item.data);
+      }
+    });
+  }
+
   function CalTime (time) {
     let word = '';
+    const TTime = new Date(time - 28800000);
 
-    if (time.hour != 0) {
-      word += time.hour + 'h';
-    } else if (time.min != 0) {
-      word += time.min + 'h';
-    } else if (time.sec != 0) {
-      word += time.sec + 'h';
+    if (TTime.getHours()) {
+      word += TTime.getHours() + '時';
+    }
+    if (TTime.getMinutes()) {
+      word += TTime.getMinutes() + '分';
+    }
+    if (TTime.getSeconds()) {
+      word += TTime.getSeconds() + '秒';
     }
 
     return word;
+  }
+
+  function CalcHpay () {
+    return ordering.value.npay - CalcTotal();
+  }
+
+  function CalcTotal () {
+    let TTotal = 0;
+    for (let i of ordering.value.data) {
+      TTotal += i.price * i.count;
+    }
+    ordering.value.total = TTotal;
+    return TTotal;
+  }
+
+  function CalOrderTime () {
+    let time;
+    try {
+      time = CashOdishData.value[CashOdishData.value.length - 1].time;
+    } catch (error) {
+      time = 0;
+    }
+
+    for (let i of ordering.value.data) {
+      for (let j of MealSettingData.value) {
+        if (j.type == i.type) {
+          time = Math.max(time, j.mtime*i.count);
+          break;
+        }
+      }
+    }
+    ordering.value.time = time;
+    return time;
   }
 
   function ocaside () {
@@ -730,20 +664,89 @@
     }
   }
 
-  function remove (order) {
-    CashOdishData.value.splice(order,1);
+  function RemoveDish (index) {
+    let temp = CashOdishData.value[index];
+    ModifyOrder('remove', temp);
+    //CashOdishData.value.splice(index,1);
   }
 
-  function start (order) {
-    alert(order);
+  function finish (index) {
+    let temp = CashOdishData.value[index];
+    ModifyOrder('finish', temp);
   }
 
-  function stop (order) {
-    alert(order);
+  function start (index) {
+    ModifyMdish('start', index);
   }
 
-  function finish (order) {
-    MdishData.value[MdishType].splice(order,1);
+  function stop (index) {
+    ModifyMdish('stop', index);
+  }
+
+  function complete (index) {
+    ModifyMdish('complete', index);
+  }
+
+  function OAddOrder () {
+    ordering.value.data.splice(0, ordering.value.data.length);
+    for (let i in MealSettingData.value) {
+      let temp = MealSettingData.value[i];
+      ordering.value.data.push({
+        type: temp.type,
+        price: temp.nprice,
+        count: 0
+      })
+    }
+    AddOrderStatus.value = true;
+  }
+
+  function SendOrder () {
+    let last, time = 0;
+    if (CashOdishData.value[CashOdishData.value.length - 1] == undefined) {
+      last = {
+        num: -1,
+        time: 0,
+        order: -1
+      }
+    } else {
+      last = CashOdishData.value[CashOdishData.value.length - 1];
+    }
+
+    for (let i of ordering.value.data) {
+      for (let j of MealSettingData.value) {
+        if (j.type == i.type) {
+          time = Math.max(time, j.mtime*i.count);
+          break;
+        }
+      }
+    }
+    
+    let temp = {
+      num: last.num + 1,
+      dish: {},
+      price: ordering.value.total,
+      time: last.time + time,
+      status: 0,
+      show: true,
+      order: last.order + 1
+    };
+    for (let i in ordering.value.data) {
+      temp.dish[ordering.value.data[i].type] = ordering.value.data[i].count;
+    }
+    ModifyOrder('add', temp);
+    //CashOdishData.value.push(temp);
+    AddOrderStatus.value = false;
+  }
+
+  function detail (index) {
+    let TTotal = 0;
+    for (let i in CashOdishData.value[index].dish) {
+      TTotal += parseInt(CashOdishData.value[index].dish[i]);
+    }
+    DetailThing.value.data = CashOdishData.value[index].dish;
+    DetailThing.value.total = TTotal;
+
+    DetailStatus.value = true;
   }
 
   function OCAddOrder (show) {
@@ -762,12 +765,6 @@
     } else {
       Detail.value.close();
     }
-  }
-
-  function detail (order) {
-    console.log(order);
-    DetailStatus.value = true;
-    OCDetail(true);
   }
 
   function AOHCOS ({ clientX: x, clientY: y }) {

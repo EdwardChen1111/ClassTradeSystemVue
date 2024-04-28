@@ -25,9 +25,14 @@ header {
 
 .headerbtn {
     font-size: x-large;
+    vertical-align: middle;
     margin-left: 2%;
-    width: 6%;
     padding: 0.5%;
+    text-align: center;
+}
+
+.headerbtn span {
+    vertical-align: middle;
     text-align: center;
 }
 
@@ -43,14 +48,14 @@ header {
     font-size: x-large;
 }
 
-#account, #password, #submit {
+#class, #account, #password, #submit {
     display: flex;
     flex-wrap: nowrap;
     justify-content: left;
     align-items: center;
 }
 
-#acselect {
+.loginselect {
     flex-grow: 1;
     font-size: large;
 }
@@ -68,7 +73,7 @@ header {
 }
 
 #wronglogin {
-    display: none;
+    display: flex;
     font-size: large;
     color: red;
     flex-grow: 1;
@@ -117,16 +122,22 @@ aside{
     border-style: solid;
     border-color: gray;
     position: absolute;
-    display: 'flex';
+    display: flex;
     flex-direction: column;
+}
+
+.asidediv{
+    display: flex;
+    flex-direction: column;
+    flex-wrap: wrap;
 }
 
 .asidelistbtn{
     margin: 0px;
     border: 0px;
     border-bottom: 2px;
-    height: 6%;
     width: 100%;
+    font-size: x-large;
     border-style: solid;
     border-color: gray;
     background-color: white;
