@@ -63,38 +63,38 @@
         </table>
       </dialog>
     </transition>
-    <transition name="dialog" @after-leave="OCSendSetting(false)">
-      <dialog ref="SendSetting" v-show="SendSettingStatus" id="sendsetting" @click="SSHCOS" @cancel.prevent>
+    <transition name="dialog" @after-leave="OCSendSettingDish(false)">
+      <dialog ref="SendSettingDish" v-show="SendSettingDishStatus" id="sendsettingdish" @click="SSDHCOS" @cancel.prevent>
         <table>
           <caption>餐點資料設定</caption>
           <thead>
             <tr>
               <td>品項</td>
-              <td>原價</td>
+              <td>成本</td>
               <td>折價</td>
               <td>進貨數量</td>
               <td>剩餘數量</td>
               <td>製作時間</td>
               <td>同時製作上限</td>
-              <td>內容</td>
+              <td>刪除</td>
             </tr>
           </thead>
           <tbody>
             <tr>
-              <td><input v-model="SendSettingData.type"></td>
+              <td><input :disabled="CheckSSDT(SendSettingData.type)" v-model="SendSettingData.type"></td>
               <td><input type="number" v-model="SendSettingData.oprice"></td>
               <td><input type="number" v-model="SendSettingData.nprice"></td>
               <td><input type="number" v-model="SendSettingData.ocount"></td>
               <td><input type="number" v-model="SendSettingData.ncount"></td>
               <td><input type="number" v-model="SendSettingData.mtime"></td>
               <td><input type="number" v-model="SendSettingData.ulimit"></td>
-              <td><input :disabled="SendSettingData.index == 'none'" v-model="SendSettingData.index"></td>
+              <td><button @click="ModifyMealSettingData('remove', SendSettingData)">刪除</button></td>
             </tr>
           </tbody>
           <tfoot>
             <tr>
               <td>
-                <button @click="SendSettingStatus = false">取消</button>
+                <button @click="SendSettingDishStatus = false">取消</button>
               </td>
               <td></td>
               <td></td>
@@ -103,11 +103,53 @@
               <td></td>
               <td></td>
               <td>
-                <button @click="SendSetting">保存設定</button>
+                <button @click="ModifyMealSettingData('addDish', SendSettingData)">保存設定</button>
               </td>
             </tr>
           </tfoot>
         </table>
+      </dialog>
+    </transition>
+    <transition name="dialog" @after-leave="OCSendSettingCombo(false)">
+      <dialog ref="SendSettingCombo" v-show="SendSettingComboStatus" id="sendsettingcombo" @click="SSCHCOS" @cancel.prevent>
+        <table>
+          <caption><span>套餐資料設定</span><input :disabled="CheckSSDT(SendSettingData.type)" v-model="SendSettingData.type"></caption>
+          <thead>
+            <tr>
+              <td>餐點</td>
+              <td>單價</td>
+              <td>數量</td>
+              <td>成本</td>
+            </tr>
+          </thead>
+          <tbody v-for="(itempack, index) in SendSettingData.index" :key="index">
+            <tr>
+              <td>{{itempack.type}}</td>
+              <td>{{itempack.price}}</td>
+              <td><input type="number" v-model="itempack.num"></td>
+              <td>{{itempack.price*itempack.num}}</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="tfoot">
+          <div>
+            <p>
+              <span>銷售數量</span>
+              <input type="number" v-model="SendSettingData.ocount">
+            </p>
+            <p>
+              <span>套餐價</span>
+              <input type="number" v-model="SendSettingData.nprice">
+            </p>
+            <p>
+              <span>原價{{CalcSSDCTP()}}</span>
+            </p>
+          </div>
+          <div>
+            <button @click="SendSettingComboStatus = false">取消</button>
+            <button @click="ModifyMealSettingData('addCombo', SendSettingData)">保存設定</button>
+          </div>
+        </div>
       </dialog>
     </transition>
     <header id="header" v-if="SystemStatus">
@@ -227,7 +269,7 @@
           <tbody v-for="(itempack, index) in NMDD" :key="index">
             <tr>
               <td>{{itempack.count}}</td>
-              <td>{{CalTime(itempack.time)}}</td>
+              <td>{{CalTime(itempack.mtime)}}</td>
               <td><button @click="start(index)">開始製作</button></td>
               <td><button @click="stop(index)">暫停製作</button></td>
               <td><button @click="complete(index)">完成製作</button></td>
@@ -281,8 +323,8 @@
             <thead>
               <tr>
                 <td>品項</td>
-                <td>原價</td>
-                <td>折價</td>
+                <td>成本</td>
+                <td>售價</td>
                 <td>進貨數量</td>
                 <td>剩餘數量</td>
                 <td>製作時間</td>
@@ -300,7 +342,10 @@
                 <td>{{itempack.ncount}}</td>
                 <td>{{CalTime(itempack.mtime)}}</td>
                 <td>{{itempack.ulimit}}</td>
-                <td>{{itempack.index}}</td>
+                <td>
+                  <button v-if="itempack.index == 'delete'" @click="ModifyMealSettingData('remove', itempack)">刪除</button>
+                  <button v-if="itempack.index != 'delete'" @click="MealConfig(index)">詳細內容</button>
+                </td>
                 <td>
                   <button @click="MealConfig(index)">編輯</button>
                 </td>
@@ -460,6 +505,11 @@
           StatisticsData.value = result.data.SD;
           MealSettingData.value.splice(0, MealSettingData.value.length, ...result.data.MSD);
           FormulaSettingData.value.splice(0, FormulaSettingData.value.length, ...result.data.FSD);
+          for (let item of MdishData.value) {
+            if (item.type == MdishType.value) {
+              NMDD.value.splice(0, NMDD.value.length, ...item.data);
+            }
+          }
         })
         .catch((err) => { 
           console.log(err);
@@ -518,6 +568,43 @@
     return;
   }
 
+  async function ModifyMealSettingData (prefix, dict) {
+    if (prefix == 'delete') {
+      let comform = false;
+      for (let i of MealSettingData) {
+        if (i.type == dict.type) {
+          comform = true;
+          break
+        }
+      }
+      if (!comform) {
+        return;
+      }
+    }
+    
+    console.log('hihi')
+    await axios({
+      method: 'post',
+      baseURL: ServerURL,
+      url: '/mealSettingData',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      data: {
+        doing: prefix,
+        dict: dict,
+      }
+    })
+    .then((result) => { 
+      console.log(result);
+    })
+    .catch((err) => { 
+      console.log(err.response.data);
+    });
+
+    return;
+  }
+
   let SystemStatus = ref(false),
     WrongLogin = ref(false),
     userinfo = ref({
@@ -561,11 +648,13 @@
 
     DetailStatus = ref(false),
     AddOrderStatus = ref(false),
-    SendSettingStatus = ref(false),
+    SendSettingDishStatus = ref(false),
+    SendSettingComboStatus = ref(false),
 
     AddOrder = ref(),
     Detail = ref(),
-    SendSetting = ref(),
+    SendSettingDish = ref(),
+    SendSettingCombo = ref(),
 
     SendSettingData = ref({}),
 
@@ -624,7 +713,8 @@
     if (AsideStatus.value) {
       ocaside();
     }
-    if (name == 'mdish' && MdishData.value[0].type != undefined) {
+    MdishType.value = MealSettingData.value[0].type;
+    if (name == 'mdish' && MdishData.value[0] != undefined) {
       MdishType.value = MdishData.value[0].type;
       ChangeMdishPage(MdishType.value);
     }
@@ -663,12 +753,19 @@
     if (TTime.getSeconds()) {
       word += TTime.getSeconds() + '秒';
     }
+    if (word == '') {
+      word = 'finish';
+    }
 
     return word;
   }
 
   function CalcHpay () {
-    return ordering.value.npay - CalcTotal();
+    let hpay = 0
+    if (ordering.value.npay - CalcTotal() > 0) {
+      hpay = ordering.value.npay - CalcTotal();
+    }
+    return hpay;
   }
 
   function CalcTotal () {
@@ -681,23 +778,42 @@
   }
 
   function CalOrderTime () {
-    let time;
-    try {
-      time = CashOdishData.value[CashOdishData.value.length - 1].time;
-    } catch (error) {
-      time = 0;
-    }
+    let time = 1000, LastTime = {};
+
+    MdishData.value.forEach((item) => {
+      if (item.data.length != 0) {
+        LastTime[item.type] = item.data[item.data.length - 1].time;
+      }
+    });
 
     for (let i of ordering.value.data) {
       for (let j of MealSettingData.value) {
         if (j.type == i.type) {
-          time = Math.max(time, j.mtime*Math.ceil(i.count / j.ulimit));
+          if (LastTime[i.type] != null) {
+            console.log(LastTime[i.type])
+            time = Math.max(time, (j.mtime*Math.ceil(i.count / j.ulimit) + LastTime[i.type]));
+          } else {
+            time = Math.max(time, j.mtime*Math.ceil(i.count / j.ulimit));
+          }
           break;
         }
       }
     }
     ordering.value.time = time;
     return time;
+  }
+
+  function CalcSSDCTP() {
+    let price = 0;
+
+    if (SendSettingData.value != null && SendSettingData.value.index != null) {
+      for (let i of SendSettingData.value.index) {
+        price += i.price*i.num;
+      }
+      SendSettingData.value.oprice = price;
+    }
+    
+    return price;
   }
 
   function ocaside () {
@@ -738,7 +854,6 @@
     if (CashOdishData.value[CashOdishData.value.length - 1] == undefined) {
       last = {
         num: -1,
-        time: 0,
         order: -1
       }
     } else {
@@ -751,7 +866,7 @@
       num: last.num + 1,
       dish: {},
       price: ordering.value.total,
-      time: last.time + time,
+      time: time,
       status: 0,
       show: true,
       order: last.order + 1
@@ -797,24 +912,44 @@
         ncount: 0,
         mtime: 0,
         ulimit: 2,
-        index: 'none'
+        index: 'delete'
       };
+      SendSettingDishStatus.value = true;
     } else if (index == 'AddCombo') {
+      let temp = [];
+      for (let i of MealSettingData.value) {
+        if (i.index == 'delete') {
+          temp.push({
+            type: i.type,
+            price: i.nprice,
+            num: 0
+          });
+        }
+      }
       SendSettingData.value = {
         type: '',
         oprice: 0,
         nprice: 0,
         ocount: 0,
         ncount: 0,
-        mtime: 0,
         ulimit: 2,
-        index: ''
+        index: temp
       };
+      
+      SendSettingComboStatus.value = true;
     } else {
       SendSettingData.value = MealSettingData.value[index];
+      SendSettingDishStatus.value = true;
     }
+  }
 
-    SendSettingStatus.value = true;
+  function CheckSSDT (type) {
+    for (let i of MealSettingData.value) {
+      if (i.type == type) {
+        return true;
+      }
+    }
+    return false;
   }
 
   function OCAddOrder (show) {
@@ -835,12 +970,21 @@
     }
   }
 
-  function OCSendSetting (show) {
-    if (!SendSetting.value) return;
+  function OCSendSettingDish (show) {
+    if (!SendSettingDish.value) return;
     if (show) {
-      SendSetting.value.showModal();
+      SendSettingDish.value.showModal();
     } else {
-      SendSetting.value.close();
+      SendSettingDish.value.close();
+    }
+  }
+
+  function OCSendSettingCombo (show) {
+    if (!SendSettingCombo.value) return;
+    if (show) {
+      SendSettingCombo.value.showModal();
+    } else {
+      SendSettingCombo.value.close();
     }
   }
 
@@ -862,19 +1006,29 @@
     }
   }
 
-  function SSHCOS ({ clientX: x, clientY: y }) {
-    if (!SendSetting.value) return;
+  function SSDHCOS ({ clientX: x, clientY: y }) {
+    if (!SendSettingDish.value) return;
 
-    const { left, right, top, bottom } = SendSetting.value.getBoundingClientRect();
+    const { left, right, top, bottom } = SendSettingDish.value.getBoundingClientRect();
     if (x < left || x > right || y < top || y > bottom) {
-      SendSettingStatus.value = false;
+      SendSettingDishStatus.value = false;
+    }
+  }
+
+  function SSCHCOS ({ clientX: x, clientY: y }) {
+    if (!SendSettingCombo.value) return;
+
+    const { left, right, top, bottom } = SendSettingCombo.value.getBoundingClientRect();
+    if (x < left || x > right || y < top || y > bottom) {
+      SendSettingComboStatus.value = false;
     }
   }
 
   onMounted(() => {
     if (AddOrderStatus.value) OCAddOrder(true);
     if (DetailStatus.value) OCDetail(true);
-    if (SendSettingStatus.value) OCSendSetting(true);
+    if (SendSettingDishStatus.value) OCSendSettingDish(true);
+    if (SendSettingComboStatus.value) OCSendSettingCombo(true);
   });
 
   watch(AddOrderStatus, (isOpen) => {
@@ -885,8 +1039,12 @@
     if (isOpen) OCDetail(true);
   });
 
-  watch(SendSettingStatus, (isOpen) => {
-    if (isOpen) OCSendSetting(true);
+  watch(SendSettingDishStatus, (isOpen) => {
+    if (isOpen) OCSendSettingDish(true);
+  });
+
+  watch(SendSettingComboStatus, (isOpen) => {
+    if (isOpen) OCSendSettingCombo(true);
   });
 </script>
 
@@ -924,8 +1082,13 @@
     transform: scale(0.9) translateY(-2rem);
   }
 
-  .dialog-enter-from#sendsetting,
-  .dialog-leave-to#sendsetting {
+  .dialog-enter-from#sendsettingdish,
+  .dialog-leave-to#sendsettingdish {
+    transform: scale(0.9) translateY(-2rem);
+  }
+
+  .dialog-enter-from#sendsettingcombo,
+  .dialog-leave-to#sendsettingcombo {
     transform: scale(0.9) translateY(-2rem);
   }
 </style>
