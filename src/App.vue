@@ -7,38 +7,40 @@
   <body>
     <transition name="dialog" @after-leave="OCAddOrder(false)">
       <dialog ref="AddOrder" v-show="AddOrderStatus" id="addorder" @click="AOHCOS" @cancel.prevent>
-        <table>
-          <thead>
-            <tr>
-              <td>餐點</td>
-              <td>單價</td>
-              <td>數量</td>
-              <td>總計</td>
-            </tr>
-          </thead>
-          <tbody v-for="itempack in ordering.data" :key="itempack">
-            <tr>
-              <td>{{itempack.type}}</td>
-              <td>{{itempack.price}}元</td>
-              <td><input type="number" v-model="itempack.count"></td>
-              <td>{{itempack.price*itempack.count}}元</td>
-            </tr>
-          </tbody>
-        </table>
-        <div class="tfoot">
-          <div>
-            <span>實收<input type="number" v-model="ordering.npay">元</span>
-            <span>應收{{CalcTotal()}}元</span>
-            <span>找零{{CalcHpay()}}元</span>
+        <form @submit.prevent="SendOrder">
+          <table>
+            <thead>
+              <tr>
+                <td>餐點</td>
+                <td>單價</td>
+                <td>數量</td>
+                <td>總計</td>
+              </tr>
+            </thead>
+            <tbody v-for="itempack in ordering.data" :key="itempack">
+              <tr>
+                <td>{{itempack.type}}</td>
+                <td>{{itempack.price}}元</td>
+                <td><input type="number" min="0" :max="CalMaxCount(itempack.type)" v-model="itempack.count" required></td>
+                <td>{{itempack.price*itempack.count}}元</td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="tfoot">
+            <div>
+              <span>實收<input type="number" min="0" :max="CalcTotal()+10000" v-model="ordering.npay">元</span>
+              <span>應收{{CalcTotal()}}元</span>
+              <span>找零{{CalcHpay()}}元</span>
+            </div>
+            <div>
+              <button @click="AddOrderStatus = false">取消</button>
+              <p>
+                <span>需等待{{CalTime(CalOrderTime())}}</span>
+                <button type="submit">送出</button>
+              </p>
+            </div>
           </div>
-          <div>
-            <button @click="AddOrderStatus = false">取消</button>
-            <p>
-              <span>需等待{{CalTime(CalOrderTime())}}</span>
-              <button @click="SendOrder">送出</button>
-            </p>
-          </div>
-        </div>
+        </form>
       </dialog>
     </transition>
     <transition name="dialog" @after-leave="OCDetail(false)">
@@ -65,91 +67,128 @@
     </transition>
     <transition name="dialog" @after-leave="OCSendSettingDish(false)">
       <dialog ref="SendSettingDish" v-show="SendSettingDishStatus" id="sendsettingdish" @click="SSDHCOS" @cancel.prevent>
-        <table>
-          <caption>餐點資料設定</caption>
-          <thead>
-            <tr>
-              <td>品項</td>
-              <td>成本</td>
-              <td>折價</td>
-              <td>進貨數量</td>
-              <td>剩餘數量</td>
-              <td>製作時間</td>
-              <td>同時製作上限</td>
-              <td>刪除</td>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><input :disabled="CheckSSDT(SendSettingData.type)" v-model="SendSettingData.type"></td>
-              <td><input type="number" v-model="SendSettingData.oprice"></td>
-              <td><input type="number" v-model="SendSettingData.nprice"></td>
-              <td><input type="number" v-model="SendSettingData.ocount"></td>
-              <td><input type="number" v-model="SendSettingData.ncount"></td>
-              <td><input type="number" v-model="SendSettingData.mtime"></td>
-              <td><input type="number" v-model="SendSettingData.ulimit"></td>
-              <td><button @click="ModifyMealSettingData('remove', SendSettingData)">刪除</button></td>
-            </tr>
-          </tbody>
-          <tfoot>
-            <tr>
-              <td>
-                <button @click="SendSettingDishStatus = false">取消</button>
-              </td>
-              <td></td>
-              <td></td>
-              <td></td>
-              <td></td>
-              <td></td>
-              <td></td>
-              <td>
-                <button @click="ModifyMealSettingData('addDish', SendSettingData)">保存設定</button>
-              </td>
-            </tr>
-          </tfoot>
-        </table>
+        <form @submit.prevent="ModifyMealSettingData('addDish', SendSettingData)">
+          <table>
+            <caption>餐點資料設定</caption>
+            <thead>
+              <tr>
+                <td>品項</td>
+                <td>成本</td>
+                <td>折價</td>
+                <td>進貨數量</td>
+                <td>剩餘數量</td>
+                <td>製作時間</td>
+                <td>同時製作上限</td>
+                <td>刪除</td>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><input type="text" :disabled="CheckSSDT(SendSettingData.type)" v-model="SendSettingData.type" maxlength="10" required></td>
+                <td><input type="number" min="0" max="100000" v-model="SendSettingData.oprice" required></td>
+                <td><input type="number" min="0" max="100000" v-model="SendSettingData.nprice" required></td>
+                <td><input type="number" min="0" max="1000000" v-model="SendSettingData.ocount" required></td>
+                <td><input type="number" min="0" :max="SendSettingData.ocount" v-model="SendSettingData.ncount" required></td>
+                <td><input type="number" min="0" max="43200000" v-model="SendSettingData.mtime" required></td>
+                <td><input type="number" min="0" max="10000" v-model="SendSettingData.ulimit" required></td>
+                <td><button @click="ModifyMealSettingData('remove', SendSettingData)">刪除</button></td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr>
+                <td>
+                  <button @click="SendSettingDishStatus = false">取消</button>
+                </td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td>
+                  <button type="submit">保存設定</button>
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        </form>
       </dialog>
     </transition>
     <transition name="dialog" @after-leave="OCSendSettingCombo(false)">
       <dialog ref="SendSettingCombo" v-show="SendSettingComboStatus" id="sendsettingcombo" @click="SSCHCOS" @cancel.prevent>
-        <table>
-          <caption><span>套餐資料設定</span><input :disabled="CheckSSDT(SendSettingData.type)" v-model="SendSettingData.type"></caption>
-          <thead>
-            <tr>
-              <td>餐點</td>
-              <td>單價</td>
-              <td>數量</td>
-              <td>成本</td>
-            </tr>
-          </thead>
-          <tbody v-for="(itempack, index) in SendSettingData.index" :key="index">
-            <tr>
-              <td>{{itempack.type}}</td>
-              <td>{{itempack.price}}</td>
-              <td><input type="number" v-model="itempack.num"></td>
-              <td>{{itempack.price*itempack.num}}</td>
-            </tr>
-          </tbody>
-        </table>
-        <div class="tfoot">
-          <div>
-            <p>
-              <span>銷售數量</span>
-              <input type="number" v-model="SendSettingData.ocount">
-            </p>
-            <p>
-              <span>套餐價</span>
-              <input type="number" v-model="SendSettingData.nprice">
-            </p>
-            <p>
-              <span>原價{{CalcSSDCTP()}}</span>
-            </p>
+        <form @submit.prevent="ModifyMealSettingData('addCombo', SendSettingData)">
+          <table>
+            <caption><span>套餐資料設定</span><input :disabled="CheckSSDT(SendSettingData.type)" v-model="SendSettingData.type"></caption>
+            <thead>
+              <tr>
+                <td>餐點</td>
+                <td>單價</td>
+                <td>數量</td>
+                <td>成本</td>
+              </tr>
+            </thead>
+            <tbody v-for="(itempack, index) in SendSettingData.index" :key="index">
+              <tr>
+                <td>{{itempack.type}}</td>
+                <td>{{itempack.price}}</td>
+                <td><input type="number" min="0" :max="CalMaxCount(itempack.type)" v-model="itempack.num" required></td>
+                <td>{{itempack.price*itempack.num}}</td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="tfoot">
+            <div>
+              <p>
+                <span>銷售數量</span>
+                <input type="number" min="0" max="5000000" v-model="SendSettingData.ocount" required>
+              </p>
+              <p>
+                <span>套餐價</span>
+                <input type="number" min="0" max="5000000" v-model="SendSettingData.nprice" required>
+              </p>
+              <p>
+                <span>原價{{CalcSSDCTP()}}</span>
+              </p>
+            </div>
+            <div>
+              <button @click="SendSettingComboStatus = false">取消</button>
+              <button type="submit">保存設定</button>
+            </div>
           </div>
-          <div>
-            <button @click="SendSettingComboStatus = false">取消</button>
-            <button @click="ModifyMealSettingData('addCombo', SendSettingData)">保存設定</button>
+        </form>
+      </dialog>
+    </transition>
+    <transition name="dialog" @after-leave="OCModifyFormula(false)">
+      <dialog ref="ModifyFormula" v-show="ModifyFormulaStatus" id="modifyformula" @click="MFHCOS" @cancel.prevent>
+        <form @submit.prevent="SendModifyFormula('addFormula')">
+          <table>
+            <caption>{{ModifyFormulaData.type}}</caption>
+            <thead>
+              <tr>
+                <td>時間</td>
+                <td>數量</td>
+                <td>價格</td>
+                <td>刪除</td>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><input type="datetime-local" v-model="ModifyFormulaData.data.time" required></td>
+                <td><input type="number" min="0" v-model="ModifyFormulaData.data.count" required></td>
+                <td><input type="number" min="0" v-model="ModifyFormulaData.data.price" required></td>
+                <td>
+                  <button @click="SendModifyFormula('remove')">刪除</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="tfoot">
+            <div>
+              <button @click="ModifyFormulaStatus = false">取消</button>
+              <button type="submit">保存設定</button>
+            </div>
           </div>
-        </div>
+        </form>
       </dialog>
     </transition>
     <header id="header" v-if="SystemStatus">
@@ -214,7 +253,7 @@
         <h1 v-if="MainPageStatus.mdish === MainPageStatus.back">這裡什麼都沒有</h1>
         <div class="asidediv" v-if="MainPageStatus.mdish">
           <div class="asidediv" v-for="itempack in MealSettingData" :key="itempack.type">
-            <button class="asidelistbtn" @click="ChangeMdishPage(itempack.type, index)">{{itempack.type}}</button>
+            <button class="asidelistbtn" v-if="itempack.index == 'delete'" @click="ChangeMdishPage(itempack.type)">{{itempack.type}}</button>
           </div>
         </div>
         <div class="asidediv" v-if="MainPageStatus.back">
@@ -378,19 +417,21 @@
                 <td>時間</td>
                 <td>數量</td>
                 <td>價格</td>
-                <td>回本率</td>
+                <td>編輯</td>
               </tr>
             </thead>
-            <tbody v-for="items in itempack.data" :key="items">
+            <tbody v-for="(items, index) in itempack.data" :key="items">
               <tr>
-                <td>{{CalTime(items.time)}}</td>
+                <td>{{CalMFTime(items.time)}}</td>
                 <td>{{items.count}}</td>
                 <td>{{items.price}}</td>
-                <td>{{items.percent.min + '% ~ ' + items.percent.max + '%'}}</td>
+                <td>
+                  <button @click="OModifyFormula('', itempack, index)">編輯</button>
+                </td>
               </tr>
             </tbody>
             <tfoot>
-              <button>新增條件</button>
+              <button @click="OModifyFormula('add', itempack)">新增條件</button>
             </tfoot>
           </table>
         </div>
@@ -400,18 +441,22 @@
             <thead>
               <tr>
                 <td>職位</td>
-                <td>IP</td>
-                <td>時間</td>
-                <td>移除</td>
+                <td>密碼</td>
+                <td>在線人數</td>
+                <td>令牌</td>
+                <td>編輯</td>
               </tr>
             </thead>
             <tbody>
               <tr>
                 <td>收銀</td>
-                <td>192.168.5.29</td>
-                <td>24h</td>
+                <td><input></td>
+                <td>1</td>
                 <td>
-                  <button>移除</button>
+                  <button>查看</button>
+                </td>
+                <td>
+                  <button>編輯</button>
                 </td>
               </tr>
             </tbody>
@@ -505,6 +550,10 @@
           StatisticsData.value = result.data.SD;
           MealSettingData.value.splice(0, MealSettingData.value.length, ...result.data.MSD);
           FormulaSettingData.value.splice(0, FormulaSettingData.value.length, ...result.data.FSD);
+          console.log(FormulaSettingData.value)
+          if (MealSettingData.value[0] != undefined) {
+            MdishType.value = MealSettingData.value[0].type;
+          }
           for (let item of MdishData.value) {
             if (item.type == MdishType.value) {
               NMDD.value.splice(0, NMDD.value.length, ...item.data);
@@ -580,9 +629,10 @@
       if (!comform) {
         return;
       }
+    } else if (prefix == 'addCombo') {
+      dict.ncount = dict.ocount;
     }
     
-    console.log('hihi')
     await axios({
       method: 'post',
       baseURL: ServerURL,
@@ -593,6 +643,33 @@
       data: {
         doing: prefix,
         dict: dict,
+      }
+    })
+    .then((result) => { 
+      console.log(result);
+    })
+    .catch((err) => { 
+      console.log(err.response.data);
+    });
+
+    return;
+  }
+  
+  async function SendModifyFormula (doing) {
+    let dict = ModifyFormulaData.value;
+    dict.data.time = Date.parse(dict.data.time);
+    
+    await axios({
+      method: 'post',
+      baseURL: ServerURL,
+      url: '/modifyFormula',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      data: {
+        doing: doing,
+        type: dict.type,
+        dict: dict.data
       }
     })
     .then((result) => { 
@@ -650,13 +727,24 @@
     AddOrderStatus = ref(false),
     SendSettingDishStatus = ref(false),
     SendSettingComboStatus = ref(false),
+    ModifyFormulaStatus = ref(false),
 
     AddOrder = ref(),
     Detail = ref(),
     SendSettingDish = ref(),
     SendSettingCombo = ref(),
+    ModifyFormula = ref(),
 
     SendSettingData = ref({}),
+    ModifyFormulaData = ref({
+      type: '',
+      data: {
+        time: 0,
+        count: 0,
+        price: 0,
+        order: 0
+      }
+    }),
 
     DetailThing = ref({
       data: {},
@@ -713,10 +801,12 @@
     if (AsideStatus.value) {
       ocaside();
     }
-    MdishType.value = MealSettingData.value[0].type;
-    if (name == 'mdish' && MdishData.value[0] != undefined) {
-      MdishType.value = MdishData.value[0].type;
+    MdishType.value = 'none';
+    if (name == 'mdish' && MealSettingData.value[0] != undefined) {
+      MdishType.value = MealSettingData.value[0].type;
       ChangeMdishPage(MdishType.value);
+    } else if (name == 'mdish') {
+      alert('無餐點資料，請洽貴班後台新增。');
     }
     
     MainPageStatus.value[name] = true;
@@ -732,12 +822,17 @@
   }
 
   function ChangeMdishPage (type) {
+    let check = false;
     MdishType.value = type;
     MdishData.value.forEach((item) => {
-      if (item.type == type) {
+      if (item.type == MdishType.value) {
+        check = true;
         NMDD.value.splice(0, NMDD.value.length, ...item.data);
       }
     });
+    if (!check) {
+      NMDD.value.splice(0, NMDD.value.length);
+    }
   }
 
   function CalTime (time) {
@@ -760,6 +855,13 @@
     return word;
   }
 
+  function CalMFTime (time) {
+    let d = new Date(parseInt(time));
+    let word = d.getHours() + '時' + d.getMinutes() + '分';
+
+    return word;
+  }
+
   function CalcHpay () {
     let hpay = 0
     if (ordering.value.npay - CalcTotal() > 0) {
@@ -777,6 +879,14 @@
     return TTotal;
   }
 
+  function CalMaxCount (type) {
+    for (let i of MealSettingData.value) {
+      if (i.type == type) {
+        return i.ncount;
+      }
+    }
+  }
+
   function CalOrderTime () {
     let time = 1000, LastTime = {};
 
@@ -786,20 +896,41 @@
       }
     });
 
+    let temp = {};
+    for (let i of ordering.value.data) {
+      if (i.index != 'delete') {
+        for (let j in i.index) {
+          if (temp[i.index[j].type] == undefined) {
+            temp[i.index[j].type] = i.count*i.index[j].num;
+          } else {
+            temp[i.index[j].type] += i.count*i.index[j].num;
+          }
+        }
+      }
+    }
+
     for (let i of ordering.value.data) {
       for (let j of MealSettingData.value) {
-        if (j.type == i.type) {
+        if (j.type == i.type && i.index == 'delete') {
           if (LastTime[i.type] != null) {
-            console.log(LastTime[i.type])
-            time = Math.max(time, (j.mtime*Math.ceil(i.count / j.ulimit) + LastTime[i.type]));
+            if (temp[i.type] != null) {
+              time = Math.max(time, (j.mtime*Math.ceil((i.count + temp[i.type])/ j.ulimit) + LastTime[i.type]));
+            } else {
+              time = Math.max(time, (j.mtime*Math.ceil(i.count/ j.ulimit) + LastTime[i.type]));
+            }
           } else {
-            time = Math.max(time, j.mtime*Math.ceil(i.count / j.ulimit));
+            if (temp[i.type] != null) {
+              time = Math.max(time, j.mtime*Math.ceil((i.count + temp[i.type])/ j.ulimit));
+            } else {
+              time = Math.max(time, j.mtime*Math.ceil(i.count/ j.ulimit));
+            }
           }
           break;
         }
       }
     }
     ordering.value.time = time;
+
     return time;
   }
 
@@ -872,8 +1003,35 @@
       order: last.order + 1
     };
     for (let i in ordering.value.data) {
-      temp.dish[ordering.value.data[i].type] = ordering.value.data[i].count;
+      if (ordering.value.data[i].index == 'delete') {
+        if (temp.dish[ordering.value.data[i].type] == null) {
+          temp.dish[ordering.value.data[i].type] = ordering.value.data[i].count;
+        } else {
+          temp.dish[ordering.value.data[i].type] += ordering.value.data[i].count;
+        }
+      } else {
+        for (let j in ordering.value.data[i].index) {
+          if (temp.dish[ordering.value.data[i].index[j].type] == null) {
+            temp.dish[ordering.value.data[i].index[j].type] = ordering.value.data[i].index[j].num*ordering.value.data[i].count;
+          } else {
+            temp.dish[ordering.value.data[i].index[j].type] += ordering.value.data[i].index[j].num*ordering.value.data[i].count;
+          }
+        }
+      }
     }
+
+    let check = false;
+    for (let i in temp.dish) {
+      if (temp.dish[i] != 0) {
+        check = true;
+        break;
+      }
+    }
+    if (!check) {
+      alert("請輸入有效餐點數量");
+      return;
+    }
+
     ModifyOrder('add', temp);
     AddOrderStatus.value = false;
   }
@@ -885,7 +1043,8 @@
       ordering.value.data.push({
         type: temp.type,
         price: temp.nprice,
-        count: 0
+        count: 0,
+        index: temp.index
       })
     }
     AddOrderStatus.value = true;
@@ -900,6 +1059,31 @@
     DetailThing.value.total = TTotal;
 
     DetailStatus.value = true;
+  }
+
+  function OModifyFormula (prefix, itempack, index) {
+    if (prefix == 'add') {
+      let order;
+      if (itempack.data.length != 0) {
+        order = itempack.data[itempack.data.length - 1].order + 1;
+      }
+      ModifyFormulaData.value = {
+        type: itempack.type,
+        data: {
+          time: 0,
+          count: 200,
+          price: 1000,
+          order: order
+        }
+      };
+    } else {
+      ModifyFormulaData.value = {
+        type: itempack.type,
+        data: itempack.data[index]
+      };
+    }
+
+    ModifyFormulaStatus.value = true;
   }
 
   function MealConfig (index) {
@@ -932,7 +1116,8 @@
         nprice: 0,
         ocount: 0,
         ncount: 0,
-        ulimit: 2,
+        mtime: 1,
+        ulimit: 'none',
         index: temp
       };
       
@@ -988,6 +1173,15 @@
     }
   }
 
+  function OCModifyFormula (show) {
+    if (!ModifyFormula.value) return;
+    if (show) {
+      ModifyFormula.value.showModal();
+    } else {
+      ModifyFormula.value.close();
+    }
+  }
+
   function AOHCOS ({ clientX: x, clientY: y }) {
     if (!AddOrder.value) return;
 
@@ -1024,11 +1218,21 @@
     }
   }
 
+  function MFHCOS ({ clientX: x, clientY: y }) {
+    if (!ModifyFormulaStatus.value) return;
+
+    const { left, right, top, bottom } = ModifyFormula.value.getBoundingClientRect();
+    if (x < left || x > right || y < top || y > bottom) {
+      ModifyFormulaStatus.value = false;
+    }
+  }
+
   onMounted(() => {
     if (AddOrderStatus.value) OCAddOrder(true);
     if (DetailStatus.value) OCDetail(true);
     if (SendSettingDishStatus.value) OCSendSettingDish(true);
     if (SendSettingComboStatus.value) OCSendSettingCombo(true);
+    if (ModifyFormulaStatus.value) OCModifyFormula(true);
   });
 
   watch(AddOrderStatus, (isOpen) => {
@@ -1045,6 +1249,10 @@
 
   watch(SendSettingComboStatus, (isOpen) => {
     if (isOpen) OCSendSettingCombo(true);
+  });
+
+  watch(ModifyFormulaStatus, (isOpen) => {
+    if (isOpen) OCModifyFormula(true);
   });
 </script>
 
@@ -1089,6 +1297,11 @@
 
   .dialog-enter-from#sendsettingcombo,
   .dialog-leave-to#sendsettingcombo {
+    transform: scale(0.9) translateY(-2rem);
+  }
+
+  .dialog-enter-from#modifyformula,
+  .dialog-leave-to#modifyformula {
     transform: scale(0.9) translateY(-2rem);
   }
 </style>
