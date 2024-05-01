@@ -188,11 +188,11 @@ aside{
     align-items: center;
 }
 
-#detail::backdrop, #addorder::backdrop, #sendsettingdish::backdrop, #sendsettingcombo::backdrop, #modifyformula::backdrop{
+#detail::backdrop, #addorder::backdrop, #sendsettingdish::backdrop, #sendsettingcombo::backdrop, #modifyformula::backdrop, #checktoken::backdrop, #modifyuser::backdrop{
     background-color: rgba(0, 0, 0, 0.5);
 }
 
-#addorder, #detail, #sendsettingdish, #sendsettingcombo, #modifyformula{
+#addorder, #detail, #sendsettingdish, #sendsettingcombo, #modifyformula, #checktoken, #modifyuser{
     display: flex;
     flex-direction: column;
     gap: 16px;

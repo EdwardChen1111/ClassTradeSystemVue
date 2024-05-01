@@ -33,7 +33,7 @@
               <span>找零{{CalcHpay()}}元</span>
             </div>
             <div>
-              <button @click="AddOrderStatus = false">取消</button>
+              <button type="button" @click="AddOrderStatus = false">取消</button>
               <p>
                 <span>需等待{{CalTime(CalOrderTime())}}</span>
                 <button type="submit">送出</button>
@@ -67,7 +67,7 @@
     </transition>
     <transition name="dialog" @after-leave="OCSendSettingDish(false)">
       <dialog ref="SendSettingDish" v-show="SendSettingDishStatus" id="sendsettingdish" @click="SSDHCOS" @cancel.prevent>
-        <form @submit.prevent="ModifyMealSettingData('addDish', SendSettingData)">
+        <form @submit.prevent="ModifyMealSettingData('addDish', SendSettingData); SendSettingDishStatus = false">
           <table>
             <caption>餐點資料設定</caption>
             <thead>
@@ -91,13 +91,13 @@
                 <td><input type="number" min="0" :max="SendSettingData.ocount" v-model="SendSettingData.ncount" required></td>
                 <td><input type="number" min="0" max="43200000" v-model="SendSettingData.mtime" required></td>
                 <td><input type="number" min="0" max="10000" v-model="SendSettingData.ulimit" required></td>
-                <td><button @click="ModifyMealSettingData('remove', SendSettingData)">刪除</button></td>
+                <td><button @click="ModifyMealSettingData('remove', SendSettingData); SendSettingDishStatus = false">刪除</button></td>
               </tr>
             </tbody>
             <tfoot>
               <tr>
                 <td>
-                  <button @click="SendSettingDishStatus = false">取消</button>
+                  <button type="button" @click="SendSettingDishStatus = false">取消</button>
                 </td>
                 <td></td>
                 <td></td>
@@ -151,7 +151,8 @@
               </p>
             </div>
             <div>
-              <button @click="SendSettingComboStatus = false">取消</button>
+              <button type="button" @click="SendSettingComboStatus = false">取消</button>
+              <button type="button" @click="ModifyMealSettingData('remove', SendSettingData); SendSettingComboStatus = false">刪除</button>
               <button type="submit">保存設定</button>
             </div>
           </div>
@@ -177,17 +178,66 @@
                 <td><input type="number" min="0" v-model="ModifyFormulaData.data.count" required></td>
                 <td><input type="number" min="0" v-model="ModifyFormulaData.data.price" required></td>
                 <td>
-                  <button @click="SendModifyFormula('remove')">刪除</button>
+                  <button type="button" @click="SendModifyFormula('remove')">刪除</button>
                 </td>
               </tr>
             </tbody>
           </table>
           <div class="tfoot">
             <div>
-              <button @click="ModifyFormulaStatus = false">取消</button>
+              <button type="button" @click="ModifyFormulaStatus = false">取消</button>
               <button type="submit">保存設定</button>
             </div>
           </div>
+        </form>
+      </dialog>
+    </transition>
+    <transition name="dialog" @after-leave="OCCheckToken(false)">
+      <dialog ref="CheckTokenDialog" id="checktoken" v-show="CheckTokenStatus" @click="CTHCOS" @cancel.prevent>
+        <table>
+          <thead>
+            <tr>
+              <td>令牌</td>
+              <td>登出</td>
+            </tr>
+          </thead>
+          <tbody v-for="item in UserToken.data" :key="item">
+            <tr>
+              <td>{{item}}</td>
+              <td>
+                <button type="button" @click="UserLogOut(UserToken.account, item)">刪除</button>
+              </td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <button @click="CheckTokenStatus = false">完成</button>
+          </tfoot>
+        </table>
+      </dialog>
+    </transition>
+    <transition name="dialog" @after-leave="OCModifyUser(false)">
+      <dialog ref="ModifyUser" id="modifyuser" v-show="ModifyUserStatus" @click="MUHCOS" @cancel.prevent>
+        <form @submit.prevent="ModifyUserData(nowUserData)">
+          <table>
+            <thead>
+                <tr>
+                  <td>職位</td>
+                  <td>密碼</td>
+                  <td>最大在線人數</td>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>{{nowUserData.account}}</td>
+                  <td><input maxlength="12" v-model="nowUserData.password" required></td>
+                  <td><input type="number" min="1" max="50" v-model="nowUserData.maxonline" required></td>
+                </tr>
+              </tbody>
+            <tfoot>
+              <button type="button" @click="ModifyUserStatus = false">取消</button>
+              <button type="submit">送出</button>
+            </tfoot>
+          </table>
         </form>
       </dialog>
     </transition>
@@ -278,10 +328,10 @@
           <tbody v-for="(itempack, index) in CashOdishData" :key="index">
             <tr v-if="itempack.show">
               <td>{{itempack.num}}</td>
-              <td><button @click="detail(index)">詳細內容</button></td>
+              <td><button @click="detail(index, 'CO')">詳細內容</button></td>
               <td>{{itempack.price}}元</td>
               <td>{{CalTime(itempack.time)}}</td>
-              <td><button @click="RemoveDish(index)">取消訂單</button></td>
+              <td><button :disabled="itempack.status" @click="RemoveDish(index)">取消訂單</button></td>
             </tr>
           </tbody>
           <tfoot>
@@ -311,7 +361,7 @@
               <td>{{CalTime(itempack.mtime)}}</td>
               <td><button @click="start(index)">開始製作</button></td>
               <td><button @click="stop(index)">暫停製作</button></td>
-              <td><button @click="complete(index)">完成製作</button></td>
+              <td><button :disabled="itempack.mtime" @click="complete(index)">完成製作</button></td>
             </tr>
           </tbody>
         </table>
@@ -330,18 +380,11 @@
           <tbody v-for="(itempack, index) in CashOdishData" :key="itempack">
             <tr v-if="itempack.show">
               <td>{{itempack.num}}</td>
-              <td><button @click="detail(index)">詳細內容</button></td>
+              <td><button @click="detail(index, 'CO')">詳細內容</button></td>
               <td>{{CalTime(itempack.time)}}</td>
-              <td><button @click="finish(index)">完成訂單</button></td>
+              <td><button :disabled="itempack.time" @click="finish(index)">完成訂單</button></td>
             </tr>
           </tbody>
-          <tfoot>
-            <tr>
-              <td>
-                <button>重新整理</button>
-              </td>
-            </tr>
-          </tfoot>
         </table>
       </div>
       <div id="back" v-if="MainPageStatus.back">
@@ -383,7 +426,7 @@
                 <td>{{itempack.ulimit}}</td>
                 <td>
                   <button v-if="itempack.index == 'delete'" @click="ModifyMealSettingData('remove', itempack)">刪除</button>
-                  <button v-if="itempack.index != 'delete'" @click="MealConfig(index)">詳細內容</button>
+                  <button v-if="itempack.index != 'delete'" @click="detail(index, 'MS')">詳細內容</button>
                 </td>
                 <td>
                   <button @click="MealConfig(index)">編輯</button>
@@ -443,20 +486,22 @@
                 <td>職位</td>
                 <td>密碼</td>
                 <td>在線人數</td>
+                <td>最大在線人數</td>
                 <td>令牌</td>
                 <td>編輯</td>
               </tr>
             </thead>
-            <tbody>
+            <tbody v-for="itempack in UserData" :key="itempack">
               <tr>
-                <td>收銀</td>
-                <td><input></td>
-                <td>1</td>
+                <td>{{UETUC[itempack.account]}}</td>
+                <td>{{itempack.password}}</td>
+                <td>{{itempack.onlinecount}}</td>
+                <td>{{itempack.maxonline}}</td>
                 <td>
-                  <button>查看</button>
+                  <button :disabled="!itempack.onlinecount" @click="CheckToken(itempack.account, itempack.data)">查看</button>
                 </td>
                 <td>
-                  <button>編輯</button>
+                  <button @click="OModifyUserData(itempack)">編輯</button>
                 </td>
               </tr>
             </tbody>
@@ -473,7 +518,12 @@
   import axios from "axios";
   import { ref, onMounted, watch } from "vue";
 
-  let COD, MDD, SD, MSD, FSD;
+  let COD, MDD, SD, MSD, FSD, UETUC = {
+    cash: '收銀',
+    mdish: '製餐',
+    odish: '出餐',
+    back: '後台'
+  };
 
   let ServerURL = 'https://edwardChen1111.ddns.net:5000';
   let token = 'first';
@@ -518,6 +568,9 @@
       SD = result.data.SD;
       MSD = result.data.MSD;
       FSD = result.data.FSD;
+      if (userinfo.value.account == 'back') {
+        UserData.value.splice(0, UserData.value.length, ...result.data.UserData);
+      }
       success = true;
     })
     .catch((err) => { 
@@ -550,6 +603,11 @@
           StatisticsData.value = result.data.SD;
           MealSettingData.value.splice(0, MealSettingData.value.length, ...result.data.MSD);
           FormulaSettingData.value.splice(0, FormulaSettingData.value.length, ...result.data.FSD);
+          console.log(userinfo.value.account);
+          if (userinfo.value.account == 'back') {
+            UserData.value.splice(0, UserData.value.length, ...result.data.UserData);
+            console.log(UserData.value);
+          }
           let check = false;
           for (let j of MealSettingData.value) {
             if (j.type == MdishType.value) {
@@ -567,6 +625,21 @@
         })
         .catch((err) => { 
           console.log(err);
+          if (err.response.data == 'log out') {
+            SystemStatus.value = false;
+            WrongLogin.value = false;
+            MainPageStatus.value[userinfo.value.account] = true;
+            token = 'first';
+            axios.defaults.headers.common['Authorization'] = token;
+            for (let i in HeaderBtnStatus.value) {
+              HeaderBtnStatus.value[i] = false;
+            }
+            for (let i in MainPageStatus.value) {
+              MainPageStatus.value[i] = false;
+            }
+            clearInterval(AutoUpdate);
+            alert('登入失效');
+          }
         });
       },1000
     );
@@ -634,9 +707,19 @@
       if (!comform) {
         return;
       }
+      SendSettingDishStatus.value = false; 
     } else if (prefix == 'addCombo') {
-      dict.ncount = dict.ocount;
       let check = false;
+      if (dict.type == '') {
+        alert('請輸入有效套餐名稱');
+        return;
+      }
+      if (dict.ocount != 0) {
+        dict.ncount = dict.ocount;
+      } else {
+        alert('請輸入有效套餐數量');
+        return;
+      }
       for (let i of dict.index) {
         if (i.num != 0) {
           check = true;
@@ -647,10 +730,9 @@
         alert('請輸入有效餐點數量');
         return;
       }
+      SendSettingComboStatus.value = false; 
     }
 
-
-    
     await axios({
       method: 'post',
       baseURL: ServerURL,
@@ -692,6 +774,76 @@
     })
     .then((result) => { 
       console.log(result);
+    })
+    .catch((err) => { 
+      console.log(err.response.data);
+    });
+
+    return;
+  }
+
+  async function ModifyComboCount (type, count) {    
+    await axios({
+      method: 'post',
+      baseURL: ServerURL,
+      url: '/modifyComboCount',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      data: {
+        type: type,
+        count: count
+      }
+    })
+    .then((result) => { 
+      console.log(result);
+    })
+    .catch((err) => { 
+      console.log(err.response.data);
+    });
+
+    return;
+  }
+
+  async function ModifyUserData (dict) {
+    await axios({
+      method: 'post',
+      baseURL: ServerURL,
+      url: '/modifyUserData',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      data: {
+        dict: dict
+      }
+    })
+    .then((result) => { 
+      console.log(result);
+      ModifyUserStatus.value = false;
+    })
+    .catch((err) => { 
+      console.log(err.response.data);
+    });
+
+    return;
+  }
+
+  async function UserLogOut (account, token) {
+    await axios({
+      method: 'post',
+      baseURL: ServerURL,
+      url: '/modifyUserLogOut',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      data: {
+        account: account,
+        token: token
+      }
+    })
+    .then((result) => { 
+      console.log(result);
+      CheckTokenStatus.value = false;
     })
     .catch((err) => { 
       console.log(err.response.data);
@@ -746,12 +898,16 @@
     SendSettingDishStatus = ref(false),
     SendSettingComboStatus = ref(false),
     ModifyFormulaStatus = ref(false),
+    CheckTokenStatus = ref(false),
+    ModifyUserStatus = ref(false),
 
     AddOrder = ref(),
     Detail = ref(),
     SendSettingDish = ref(),
     SendSettingCombo = ref(),
     ModifyFormula = ref(),
+    CheckTokenDialog = ref(),
+    ModifyUser = ref(),
 
     SendSettingData = ref({}),
     ModifyFormulaData = ref({
@@ -763,6 +919,9 @@
         order: 0
       }
     }),
+    UserData = ref([]),
+    UserToken = ref({}),
+    nowUserData = ref({}),
 
     DetailThing = ref({
       data: {},
@@ -955,7 +1114,7 @@
   function CalcSSDCTP() {
     let price = 0;
 
-    if (SendSettingData.value != null && SendSettingData.value.index != null) {
+    if (SendSettingData.value != null && SendSettingData.value.index != null && SendSettingData.value.index != 'delete') {
       for (let i of SendSettingData.value.index) {
         price += i.price*i.num;
       }
@@ -1028,6 +1187,7 @@
           temp.dish[ordering.value.data[i].type] += ordering.value.data[i].count;
         }
       } else {
+        ModifyComboCount(ordering.value.data[i].type, ordering.value.data[i].count);
         for (let j in ordering.value.data[i].index) {
           if (temp.dish[ordering.value.data[i].index[j].type] == null) {
             temp.dish[ordering.value.data[i].index[j].type] = ordering.value.data[i].index[j].num*ordering.value.data[i].count;
@@ -1056,6 +1216,7 @@
 
   function OAddOrder () {
     ordering.value.data.splice(0, ordering.value.data.length);
+    ordering.value.npay = 0;
     for (let i in MealSettingData.value) {
       let temp = MealSettingData.value[i];
       ordering.value.data.push({
@@ -1068,15 +1229,44 @@
     AddOrderStatus.value = true;
   }
 
-  function detail (index) {
+  function detail (index, thing) {
     let TTotal = 0;
-    for (let i in CashOdishData.value[index].dish) {
-      TTotal += parseInt(CashOdishData.value[index].dish[i]);
+    if (thing == 'CO') {
+      for (let i in CashOdishData.value[index].dish) {
+        TTotal += parseInt(CashOdishData.value[index].dish[i]);
+      }
+      DetailThing.value.data = CashOdishData.value[index].dish;
+    } else if (thing == 'MS') {
+      DetailThing.value.data = {};
+      for (let i in MealSettingData.value[index].index) {
+        TTotal += parseInt(MealSettingData.value[index].index[i].num);
+        DetailThing.value.data[MealSettingData.value[index].index[i].type] = MealSettingData.value[index].index[i].num;
+      }
     }
-    DetailThing.value.data = CashOdishData.value[index].dish;
+    
+    for (let i in DetailThing.value.data) {
+      if (DetailThing.value.data[i] == 0) {
+        delete DetailThing.value.data[i];
+      }
+    }
     DetailThing.value.total = TTotal;
 
     DetailStatus.value = true;
+  }
+
+  function CheckToken (account, dict) {
+    UserToken.value = {
+      account: account,
+      data: dict
+    };
+
+    CheckTokenStatus.value = true;
+  }
+
+  function OModifyUserData (data) {
+    nowUserData.value = data;
+
+    ModifyUserStatus.value = true;
   }
 
   function OModifyFormula (prefix, itempack, index) {
@@ -1142,7 +1332,11 @@
       SendSettingComboStatus.value = true;
     } else {
       SendSettingData.value = MealSettingData.value[index];
-      SendSettingDishStatus.value = true;
+      if (SendSettingData.value.index == 'delete') {
+        SendSettingDishStatus.value = true;
+      } else {
+        SendSettingComboStatus.value = true;
+      }
     }
   }
 
@@ -1200,6 +1394,24 @@
     }
   }
 
+  function OCCheckToken (show) {
+    if (!CheckTokenDialog.value) return;
+    if (show) {
+      CheckTokenDialog.value.showModal();
+    } else {
+      CheckTokenDialog.value.close();
+    }
+  }
+
+  function OCModifyUser (show) {
+    if (!ModifyUser.value) return;
+    if (show) {
+      ModifyUser.value.showModal();
+    } else {
+      ModifyUser.value.close();
+    }
+  }
+
   function AOHCOS ({ clientX: x, clientY: y }) {
     if (!AddOrder.value) return;
 
@@ -1245,12 +1457,32 @@
     }
   }
 
+  function CTHCOS ({ clientX: x, clientY: y }) {
+    if (!CheckTokenStatus.value) return;
+
+    const { left, right, top, bottom } = CheckTokenDialog.value.getBoundingClientRect();
+    if (x < left || x > right || y < top || y > bottom) {
+      CheckTokenStatus.value = false;
+    }
+  }
+
+  function MUHCOS ({ clientX: x, clientY: y }) {
+    if (!ModifyUserStatus.value) return;
+
+    const { left, right, top, bottom } = ModifyUser.value.getBoundingClientRect();
+    if (x < left || x > right || y < top || y > bottom) {
+      ModifyUserStatus.value = false;
+    }
+  }
+
   onMounted(() => {
     if (AddOrderStatus.value) OCAddOrder(true);
     if (DetailStatus.value) OCDetail(true);
     if (SendSettingDishStatus.value) OCSendSettingDish(true);
     if (SendSettingComboStatus.value) OCSendSettingCombo(true);
     if (ModifyFormulaStatus.value) OCModifyFormula(true);
+    if (CheckTokenStatus.value) OCCheckToken(true);
+    if (ModifyUserStatus.value) OCModifyUser(true);
   });
 
   watch(AddOrderStatus, (isOpen) => {
@@ -1271,6 +1503,14 @@
 
   watch(ModifyFormulaStatus, (isOpen) => {
     if (isOpen) OCModifyFormula(true);
+  });
+
+  watch(CheckTokenStatus, (isOpen) => {
+    if (isOpen) OCCheckToken(true);
+  });
+
+  watch(ModifyUserStatus, (isOpen) => {
+    if (isOpen) OCModifyUser(true);
   });
 </script>
 
@@ -1320,6 +1560,16 @@
 
   .dialog-enter-from#modifyformula,
   .dialog-leave-to#modifyformula {
+    transform: scale(0.9) translateY(-2rem);
+  }
+
+  .dialog-enter-from#checktoken,
+  .dialog-leave-to#checktoken {
+    transform: scale(0.9) translateY(-2rem);
+  }
+
+  .dialog-enter-from#modifyuser,
+  .dialog-leave-to#modifyuser {
     transform: scale(0.9) translateY(-2rem);
   }
 </style>
