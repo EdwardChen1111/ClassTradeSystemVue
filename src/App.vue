@@ -550,8 +550,13 @@
           StatisticsData.value = result.data.SD;
           MealSettingData.value.splice(0, MealSettingData.value.length, ...result.data.MSD);
           FormulaSettingData.value.splice(0, FormulaSettingData.value.length, ...result.data.FSD);
-          console.log(FormulaSettingData.value)
-          if (MealSettingData.value[0] != undefined) {
+          let check = false;
+          for (let j of MealSettingData.value) {
+            if (j.type == MdishType.value) {
+              check = true;
+            }
+          }
+          if (!check && MealSettingData.value[0] != undefined) {
             MdishType.value = MealSettingData.value[0].type;
           }
           for (let item of MdishData.value) {
@@ -631,7 +636,20 @@
       }
     } else if (prefix == 'addCombo') {
       dict.ncount = dict.ocount;
+      let check = false;
+      for (let i of dict.index) {
+        if (i.num != 0) {
+          check = true;
+          break;
+        }
+      }
+      if (!check) {
+        alert('請輸入有效餐點數量');
+        return;
+      }
     }
+
+
     
     await axios({
       method: 'post',
