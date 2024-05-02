@@ -122,8 +122,33 @@ aside{
     border-style: solid;
     border-color: gray;
     position: absolute;
+    left: 0%;
     display: flex;
     flex-direction: column;
+}
+
+table {
+    border-width: 1px;
+    border-radius: 10px;
+    border-style: solid;
+    border-collapse: separate;
+}
+
+table tbody{
+    align-content: center;
+}
+
+table thead{
+    align-content: center;
+}
+
+td {
+    text-align: center;
+    vertical-align: middle;
+    align-content: center;
+    align-items: center;
+    justify-content: center;
+    justify-items: center;
 }
 
 .asidediv{
@@ -180,6 +205,21 @@ aside{
     font-size: x-large;
 }
 
+#mdishtable {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: x-large;
+}
+
+#mdishtable div{
+    display: flex;
+    width: 50%;
+    justify-content: center;
+    align-items: center;
+    font-size: x-large;
+}
+
 .statisticsindex{
     width: 100%;
     text-align: center;
@@ -188,11 +228,11 @@ aside{
     align-items: center;
 }
 
-#detail::backdrop, #addorder::backdrop, #sendsettingdish::backdrop, #sendsettingcombo::backdrop, #modifyformula::backdrop, #checktoken::backdrop, #modifyuser::backdrop{
+#detail::backdrop, #addorder::backdrop, #sendsettingdish::backdrop, #sendsettingcombo::backdrop, #modifyformula::backdrop, #checktoken::backdrop, #modifyuser::backdrop, #mdishshow::backdrop{
     background-color: rgba(0, 0, 0, 0.5);
 }
 
-#addorder, #detail, #sendsettingdish, #sendsettingcombo, #modifyformula, #checktoken, #modifyuser{
+#addorder, #detail, #sendsettingdish, #sendsettingcombo, #modifyformula, #checktoken, #modifyuser, #mdishshow{
     display: flex;
     flex-direction: column;
     gap: 16px;

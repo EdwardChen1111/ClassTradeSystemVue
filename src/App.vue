@@ -241,6 +241,27 @@
         </form>
       </dialog>
     </transition>
+    <transition name="dialog" @after-leave="OCCostumeMdishShow(false)">
+      <dialog ref="MdishShow" id="mdishshow" v-show="CostumeMdishShowStatus" @click="CMSHCOS" @cancel.prevent>
+        <table>
+          <thead>
+            <tr>
+              <td>項目</td>
+              <td>顯示</td>
+            </tr>
+          </thead>
+          <tbody v-for="(itempack, index) in MdishShowList" :key="index">
+            <tr>
+              <td>{{itempack.type}}</td>
+              <td><input type="checkbox" v-model="itempack.check"></td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <button @click="CostumeMdishShowStatus = false; ChangeMdishPage('costume')">完成</button>
+          </tfoot>
+        </table>
+      </dialog>
+    </transition>
     <header id="header" v-if="SystemStatus">
       <button id="asidebtn" @click.self="ocaside"><img src="./asidebtn.png" @click.self="ocaside"></button>
       <span id="headerindex">校慶班級收銀系統</span>
@@ -299,20 +320,24 @@
       </form>
     </main>
     <main id="mainsystem" v-if="SystemStatus">
-      <aside>
-        <h1 v-if="MainPageStatus.mdish === MainPageStatus.back">這裡什麼都沒有</h1>
-        <div class="asidediv" v-if="MainPageStatus.mdish">
-          <div class="asidediv" v-for="itempack in MealSettingData" :key="itempack.type">
-            <button class="asidelistbtn" v-if="itempack.index == 'delete'" @click="ChangeMdishPage(itempack.type)">{{itempack.type}}</button>
+      <transition name="aside">
+        <aside v-show="AsideStatus">
+          <h1 v-if="MainPageStatus.mdish === MainPageStatus.back">這裡什麼都沒有</h1>
+          <div class="asidediv" v-if="MainPageStatus.mdish">
+            <button class="asidelistbtn" @click="ChangeMdishPage('all')">全部</button>
+            <button class="asidelistbtn" @click="ChangeMdishPage('costume')">自定義</button>
+            <div class="asidediv" v-for="itempack in MealSettingData" :key="itempack.type">
+              <button class="asidelistbtn" v-if="itempack.index == 'delete'" @click="ChangeMdishPage(itempack.type)">{{itempack.type}}</button>
+            </div>
           </div>
-        </div>
-        <div class="asidediv" v-if="MainPageStatus.back">
-          <button class="asidelistbtn" @click="ChangeBackPage('statistics')">統計</button>
-          <button class="asidelistbtn" @click="ChangeBackPage('mealsetting')">售價</button>
-          <button class="asidelistbtn" @click="ChangeBackPage('formula')">公式</button>
-          <button class="asidelistbtn" @click="ChangeBackPage('setting')">設定</button>
-        </div>
-      </aside>
+          <div class="asidediv" v-if="MainPageStatus.back">
+            <button class="asidelistbtn" @click="ChangeBackPage('statistics')">統計</button>
+            <button class="asidelistbtn" @click="ChangeBackPage('mealsetting')">售價</button>
+            <button class="asidelistbtn" @click="ChangeBackPage('formula')">公式</button>
+            <button class="asidelistbtn" @click="ChangeBackPage('setting')">設定</button>
+          </div>
+        </aside>
+      </transition>
       <div id="cash" v-if="MainPageStatus.cash">
         <table>
           <caption>訂單資料</caption>
@@ -344,27 +369,30 @@
         </table>
       </div>
       <div id="mdish" v-if="MainPageStatus.mdish">
-        <table>
-          <caption>{{MdishType}}製作列表</caption>
-          <thead>
-            <tr>
-              <td>製作份數</td>
-              <td>製作時間</td>
-              <td>開始製作</td>
-              <td>暫停製作</td>
-              <td>完成製作</td>
-            </tr>
-          </thead>
-          <tbody v-for="(itempack, index) in NMDD" :key="index">
-            <tr>
-              <td>{{itempack.count}}</td>
-              <td>{{CalTime(itempack.mtime)}}</td>
-              <td><button @click="start(index)">開始製作</button></td>
-              <td><button @click="stop(index)">暫停製作</button></td>
-              <td><button :disabled="itempack.mtime" @click="complete(index)">完成製作</button></td>
-            </tr>
-          </tbody>
-        </table>
+        <div id="mdishtable" v-for="(itempack, NMDDindex) in NMDD" :key="NMDDindex">
+          <table v-if="CheckMdishTable(itempack.type)">
+            <caption>{{itempack.type}}製作列表</caption>
+            <thead>
+              <tr>
+                <td>製作份數</td>
+                <td>製作時間</td>
+                <td>開始製作</td>
+                <td>暫停製作</td>
+                <td>完成製作</td>
+              </tr>
+            </thead>
+            <tbody v-for="(item, index) in itempack.data" :key="index">
+              <tr>
+                <td>{{item.count}}</td>
+                <td>{{CalTime(item.mtime)}}</td>
+                <td><button @click="start(NMDDindex, index)">開始製作</button></td>
+                <td><button @click="stop(NMDDindex, index)">暫停製作</button></td>
+                <td><button :disabled="item.mtime" @click="complete(NMDDindex, index)">完成製作</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <button v-if="MdishType == 'costume'" @click="OCostumeMdishShow()">編輯顯示項目</button>
       </div>
       <div id="odish" v-if="MainPageStatus.odish">
         <table>
@@ -382,7 +410,7 @@
               <td>{{itempack.num}}</td>
               <td><button @click="detail(index, 'CO')">詳細內容</button></td>
               <td>{{CalTime(itempack.time)}}</td>
-              <td><button :disabled="itempack.time" @click="finish(index)">完成訂單</button></td>
+              <td><button :disabled="CheckDishFinish(itempack.order)" @click="finish(index)">完成訂單</button></td>
             </tr>
           </tbody>
         </table>
@@ -394,10 +422,10 @@
             <span>收入{{StatisticsData.income}}元</span>
             <span>支出{{StatisticsData.cost}}元</span>
           </div>
-          <div class="statisticsindex">
+          <!--<div class="statisticsindex">
             <span>最佳銷售:{{StatisticsData.best}}</span>
             <span>最差銷售:{{StatisticsData.worst}}</span>
-          </div>
+          </div>-->
         </div>
         <div id="mealsetting" v-if="BackPageStatus.mealsetting">
           <table>
@@ -517,6 +545,7 @@
   import "./main.js"
   import axios from "axios";
   import { ref, onMounted, watch } from "vue";
+  import { cloneDeep } from 'lodash';
 
   let COD, MDD, SD, MSD, FSD, UETUC = {
     cash: '收銀',
@@ -614,12 +643,33 @@
               check = true;
             }
           }
-          if (!check && MealSettingData.value[0] != undefined) {
-            MdishType.value = MealSettingData.value[0].type;
+          if (!check && MealSettingData.value[0] != undefined && MdishType.value != 'all' && MdishType.value != 'costume') {
+            MdishType.value = 'all';
           }
-          for (let item of MdishData.value) {
-            if (item.type == MdishType.value) {
-              NMDD.value.splice(0, NMDD.value.length, ...item.data);
+          if (MdishType.value != 'all' && MdishType.value != 'costume') {
+            for (let item of MdishData.value) {
+              if (item.type == MdishType.value) {
+                NMDD.value.splice(0, NMDD.value.length, item);
+              }
+            }
+          } else if (MdishType.value == 'all') {
+            NMDD.value.splice(0, NMDD.value.length, ...MdishData.value);
+          } else if (MdishType.value == 'costume') {
+            NMDD.value.splice(0, NMDD.value.length);
+            for (let i of MdishShowList.value) {
+              let check = false;
+              for (let j of MdishData.value) {
+                if (i.type == j.type && i.check) {
+                  check = true;
+                  NMDD.value.push(j);
+                }
+              }
+              if (!check) {
+                NMDD.value.push({
+                  type: i.type,
+                  data: []
+                });
+              }
             }
           }
         })
@@ -630,6 +680,11 @@
             WrongLogin.value = false;
             MainPageStatus.value[userinfo.value.account] = true;
             token = 'first';
+            CashOdishData.value.splice(0, CashOdishData.value.length);
+            MdishData.value.splice(0, MdishData.value.length);
+            StatisticsData.value = {};
+            MealSettingData.value.splice(0, MealSettingData.value.length);
+            FormulaSettingData.value.splice(0, FormulaSettingData.value.length);
             axios.defaults.headers.common['Authorization'] = token;
             for (let i in HeaderBtnStatus.value) {
               HeaderBtnStatus.value[i] = false;
@@ -670,8 +725,8 @@
     return;
   }
 
-  async function ModifyMdish (prefix, index) {
-    const dict = NMDD.value[index];
+  async function ModifyMdish (prefix, NMDDindex, index) {
+    const dict = NMDD.value[NMDDindex].data[index];
     await axios({
       method: 'post',
       baseURL: ServerURL,
@@ -682,7 +737,7 @@
       data: {
         doing: prefix,
         dict: dict,
-        type: MdishType.value
+        type: NMDD.value[NMDDindex].type
       }
     })
     .then((result) => { 
@@ -861,7 +916,6 @@
     }),
 
     AsideStatus = ref(false),
-    AsidePos = ref('-9%'),
         
     HeaderBtnStatus = ref({
       cashbtn: false,
@@ -892,6 +946,7 @@
 
     MdishType = ref(''),
     NMDD = ref([]),
+    MdishShowList = ref([]),
 
     DetailStatus = ref(false),
     AddOrderStatus = ref(false),
@@ -900,6 +955,7 @@
     ModifyFormulaStatus = ref(false),
     CheckTokenStatus = ref(false),
     ModifyUserStatus = ref(false),
+    CostumeMdishShowStatus = ref(false),
 
     AddOrder = ref(),
     Detail = ref(),
@@ -908,6 +964,7 @@
     ModifyFormula = ref(),
     CheckTokenDialog = ref(),
     ModifyUser = ref(),
+    MdishShow = ref(),
 
     SendSettingData = ref({}),
     ModifyFormulaData = ref({
@@ -959,13 +1016,13 @@
     MainPageStatus.value[userinfo.value.account] = true;
 
     if (userinfo.value.account == 'mdish' && MealSettingData.value[0] != undefined) {
-      ChangeMdishPage(MealSettingData.value[0].type);
+      ChangeMdishPage('all');
       return;
     } else if (userinfo.value.account == 'back') {
       for (let i in HeaderBtnStatus.value) {
         HeaderBtnStatus.value[i] = true;
       }
-      ChangeMdishPage(MealSettingData.value[0].type);
+      ChangeMdishPage('all');
       return;
     }
     HeaderBtnStatus.value[userinfo.value.account + 'btn'] = true;
@@ -980,8 +1037,8 @@
     }
     MdishType.value = 'none';
     if (name == 'mdish' && MealSettingData.value[0] != undefined) {
-      MdishType.value = MealSettingData.value[0].type;
-      ChangeMdishPage(MdishType.value);
+      MdishType.value = 'all';
+      ChangeMdishPage('all');
     } else if (name == 'mdish') {
       alert('無餐點資料，請洽貴班後台新增。');
     }
@@ -999,17 +1056,86 @@
   }
 
   function ChangeMdishPage (type) {
-    let check = false;
+    let check = false, temp = [];
     MdishType.value = type;
-    MdishData.value.forEach((item) => {
-      if (item.type == MdishType.value) {
+    NMDD.value.splice(0, NMDD.value.length);
+    console.log(MdishData.value);
+    if (MdishData.value.length != 0) {
+      let havepush = [];
+      console.log('yeeeee')
+      MdishData.value.forEach((item) => {
+        if (item.type == MdishType.value || type == 'all') {
+          check = true;
+          temp.push(item);
+          havepush.push(item.type);
+        } else if (type == 'costume') {
+          for (let i of MdishShowList.value) {
+            if (i.type == item.type && i.check) {
+              check = true;
+              temp.push(item);
+              havepush.push(item.type);
+            }
+          }
+        }
+      });
+      
+      if (type == 'all') {
         check = true;
-        NMDD.value.splice(0, NMDD.value.length, ...item.data);
+        for (let i of MealSettingData.value) {
+          if (havepush.indexOf(i.type) == -1 && i.index == 'delete') {
+            temp.push({
+              type: i.type,
+              data: []
+            });
+          }
+        }
+      } else if (type == 'costume') {
+        check = true;
+        for (let i of MdishShowList.value) {
+          if (havepush.indexOf(i.type) == -1 && i.check) {
+            temp.push({
+              type: i.type,
+              data: []
+            });
+          }
+        }
       }
-    });
-    if (!check) {
-      NMDD.value.splice(0, NMDD.value.length);
+
+      if (!check) {
+        temp.push({
+          type: type,
+          data: []
+        });
+      }
+    } else {
+      if (type != 'all' && type != 'costume') {
+        temp.push({
+          type: type,
+          data: []
+        });
+      } else if (type == 'all') {
+        for (let i of MealSettingData.value) {
+          if (i.index == 'delete') {
+            temp.push({
+              type: i.type,
+              data: []
+            });
+          }
+        }
+      } else if (type == 'costume') {
+        for (let i of MdishShowList.value) {
+          console.log('hihi')
+          if (i.check) {
+            temp.push({
+              type: i.type,
+              data: []
+            });
+          }
+        }
+      }
     }
+
+    NMDD.value.splice(0, 1, ...temp);
   }
 
   function CalTime (time) {
@@ -1126,12 +1252,6 @@
 
   function ocaside () {
     AsideStatus.value = !AsideStatus.value;
-
-    if (AsideStatus.value) {
-      AsidePos.value = '0%';
-    } else {
-      AsidePos.value = '-9%';
-    }
   }
 
   function RemoveDish (index) {
@@ -1145,16 +1265,16 @@
     ModifyOrder('finish', temp);
   }
 
-  function start (index) {
-    ModifyMdish('start', index);
+  function start (NMDDindex, index) {
+    ModifyMdish('start',NMDDindex,  index);
   }
 
-  function stop (index) {
-    ModifyMdish('stop', index);
+  function stop (NMDDindex, index) {
+    ModifyMdish('stop',NMDDindex,  index);
   }
 
-  function complete (index) {
-    ModifyMdish('complete', index);
+  function complete (NMDDindex, index) {
+    ModifyMdish('complete',NMDDindex,  index);
   }
 
   function SendOrder () {
@@ -1254,6 +1374,37 @@
     DetailStatus.value = true;
   }
 
+  function OCostumeMdishShow () {
+    let temp = [];
+
+    for (let i of MealSettingData.value) {
+      if (MdishShowList.value != []) {
+        let check = false;
+        for (let j in MdishShowList.value) {
+          if (MdishShowList.value[j].type == i.type && i.index == 'delete') {
+            check = true;
+            temp.push(cloneDeep(MdishShowList.value[j]));
+            break;
+          }
+        }
+        if (!check && i.index == 'delete') {
+          temp.push({
+            type: i.type,
+            check: false
+          });
+        }
+      } else if (i.index == 'delete') {
+        temp.push({
+          type: i.type,
+          check: false
+        });
+      }
+    }
+
+    MdishShowList.value.splice(0, MdishShowList.value.length, ...temp);
+    CostumeMdishShowStatus.value = true;
+  }
+
   function CheckToken (account, dict) {
     UserToken.value = {
       account: account,
@@ -1263,8 +1414,31 @@
     CheckTokenStatus.value = true;
   }
 
+  function CheckMdishTable (type) {
+    if (MdishType.value == 'all' || type == MdishType.value) {
+      return true;
+    } else if (MdishType.value == 'costume') {
+      for (let i of MdishShowList.value) {
+        if (type == i.type && i.check) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  }
+
+  function CheckDishFinish (order) {
+    for (let i of MdishData.value) {
+      if (i.data[0].order <= order) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   function OModifyUserData (data) {
-    nowUserData.value = data;
+    nowUserData.value = cloneDeep(data);
 
     ModifyUserStatus.value = true;
   }
@@ -1276,18 +1450,18 @@
         order = itempack.data[itempack.data.length - 1].order + 1;
       }
       ModifyFormulaData.value = {
-        type: itempack.type,
+        type: cloneDeep(itempack.type),
         data: {
           time: 0,
           count: 200,
           price: 1000,
-          order: order
+          order: cloneDeep(order)
         }
       };
     } else {
       ModifyFormulaData.value = {
-        type: itempack.type,
-        data: itempack.data[index]
+        type: cloneDeep(itempack.type),
+        data: cloneDeep(itempack.data[index])
       };
     }
 
@@ -1331,7 +1505,7 @@
       
       SendSettingComboStatus.value = true;
     } else {
-      SendSettingData.value = MealSettingData.value[index];
+      SendSettingData.value = cloneDeep(MealSettingData.value[index]);
       if (SendSettingData.value.index == 'delete') {
         SendSettingDishStatus.value = true;
       } else {
@@ -1412,6 +1586,15 @@
     }
   }
 
+  function OCCostumeMdishShow (show) {
+    if (!MdishShow.value) return;
+    if (show) {
+      MdishShow.value.showModal();
+    } else {
+      MdishShow.value.close();
+    }
+  }
+
   function AOHCOS ({ clientX: x, clientY: y }) {
     if (!AddOrder.value) return;
 
@@ -1475,6 +1658,15 @@
     }
   }
 
+  function CMSHCOS ({ clientX: x, clientY: y }) {
+    if (!ModifyUserStatus.value) return;
+
+    const { left, right, top, bottom } = ModifyUser.value.getBoundingClientRect();
+    if (x < left || x > right || y < top || y > bottom) {
+      ModifyUserStatus.value = false;
+    }
+  }
+
   onMounted(() => {
     if (AddOrderStatus.value) OCAddOrder(true);
     if (DetailStatus.value) OCDetail(true);
@@ -1483,6 +1675,7 @@
     if (ModifyFormulaStatus.value) OCModifyFormula(true);
     if (CheckTokenStatus.value) OCCheckToken(true);
     if (ModifyUserStatus.value) OCModifyUser(true);
+    if (CostumeMdishShowStatus.value) OCCostumeMdishShow(true);
   });
 
   watch(AddOrderStatus, (isOpen) => {
@@ -1512,12 +1705,34 @@
   watch(ModifyUserStatus, (isOpen) => {
     if (isOpen) OCModifyUser(true);
   });
+
+  watch(CostumeMdishShowStatus, (isOpen) => {
+    if (isOpen) OCCostumeMdishShow(true);
+  });
 </script>
 
 <style>
-  aside {
-    left: v-bind(AsidePos);
-    transition: all 1s;
+  .aside-enter-from,
+  .aside-leave-to {
+    left: -9%;
+  }
+
+  .aside-enter-to,
+  .aside-leave-from {
+    left: 0%;
+  }
+
+  .aside-enter-active {
+    transition-timing-function: "ease-out";
+  }
+
+  .aside-leave-active {
+    transition-timing-function: "ease-in";
+  }
+
+  .aside-enter-active,
+  .aside-leave-active {
+    transition-duration: 200ms;
   }
 
   .dialog-enter-from,
@@ -1570,6 +1785,11 @@
 
   .dialog-enter-from#modifyuser,
   .dialog-leave-to#modifyuser {
+    transform: scale(0.9) translateY(-2rem);
+  }
+
+  .dialog-enter-from#mdishshow,
+  .dialog-leave-to#mdishshow {
     transform: scale(0.9) translateY(-2rem);
   }
 </style>
