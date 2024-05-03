@@ -653,7 +653,28 @@
               }
             }
           } else if (MdishType.value == 'all') {
-            NMDD.value.splice(0, NMDD.value.length, ...MdishData.value);
+            NMDD.value.splice(0, NMDD.value.length);
+            for (let i of MealSettingData.value) {
+              let check = false;
+              for (let j of MdishData.value) {
+                if (i.type == j.type && j.data.length != 0) {
+                  check = true;
+                  NMDD.value.push(cloneDeep(j));
+                } else if (i.type == j.type) {
+                  check = true;
+                  NMDD.value.push({
+                    type: i.type,
+                    data: []
+                  });
+                }
+              }
+              if (!check) {
+                NMDD.value.push({
+                  type: i.type,
+                  data: []
+                });
+              }
+            }
           } else if (MdishType.value == 'costume') {
             NMDD.value.splice(0, NMDD.value.length);
             for (let i of MdishShowList.value) {
