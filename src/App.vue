@@ -1430,7 +1430,7 @@
 
   function CheckDishFinish (order) {
     for (let i of MdishData.value) {
-      if (i.data[0].order <= order) {
+      if (i.data.length != 0 && i.data[0].order <= order) {
         return true;
       }
     }
