@@ -1195,7 +1195,7 @@
 
     MdishData.value.forEach((item) => {
       if (item.data.length != 0) {
-        LastTime[item.type] = item.data[item.data.length - 1].time;
+        LastTime[item.type] = item.data[item.data.length - 1].endtime;
       }
     });
 
@@ -1215,8 +1215,8 @@
     for (let i of ordering.value.data) {
       for (let j of MealSettingData.value) {
         if (j.type == i.type && i.index == 'delete') {
-          if (LastTime[i.type] != null) {
-            if (temp[i.type] != null) {
+          if (LastTime[i.type] != undefined) {
+            if (temp[i.type] != undefined) {
               time = Math.max(time, (j.mtime*Math.ceil((i.count + temp[i.type])/ j.ulimit) + LastTime[i.type]));
             } else {
               time = Math.max(time, (j.mtime*Math.ceil(i.count/ j.ulimit) + LastTime[i.type]));
